@@ -16,7 +16,7 @@ import sys
 from . import __version__, ops
 from .boards import BOARDS
 from .jl import Connection
-from .scsi import find_devices
+from .scsi import SCSIError, find_devices
 
 
 def default_backup_dir():
@@ -104,6 +104,8 @@ def main(argv=None):
         s = connect(args)
     except ops.Refused as e:
         sys.exit(f'Refused: {e}')
+    except SCSIError as e:
+        sys.exit(str(e))
     try:
         show(s)
         if args.cmd == 'backup':
@@ -126,5 +128,7 @@ def main(argv=None):
             run(s, plan, args.yes)
     except ops.Refused as e:
         sys.exit(f'Refused: {e}')
+    except SCSIError as e:
+        sys.exit(f'USB error: {e}. Nothing more was written; check the cable and try again.')
     finally:
         s.conn.close()
