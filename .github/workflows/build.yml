@@ -26,15 +26,15 @@ jobs:
           python-version: '3.12'
       - run: python -m unittest -v
       - run: pip install pyinstaller==6.11.1
-      - name: Build FM-Flasher.exe
+      - name: Build M-Flasher.exe
         run: >
-          pyinstaller --onefile --windowed --uac-admin --name FM-Flasher
+          pyinstaller --onefile --windowed --uac-admin --name M-Flasher
           --add-data "flasher/data;flasher/data" run.py
       - uses: actions/upload-artifact@v4
         with:
-          name: FM-Flasher-windows
-          path: dist/FM-Flasher.exe
+          name: M-Flasher-windows
+          path: dist/M-Flasher.exe
       - if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/FM-Flasher.exe
+          files: dist/M-Flasher.exe

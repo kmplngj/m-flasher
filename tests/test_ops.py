@@ -2,7 +2,7 @@
 
 The real-image tests need flash dumps and M-VAVE packages, which cannot be
 published: point FLASHER_TEST_DATA at a folder with smk37-stock.bin,
-smk37-snoop37.bin, fm1-stock.bin, smk37-016.fwsc and fm1-015.fwsc; they are
+smk37-snoop37.bin, smk37-baudgirl.bin, fm1-stock.bin, smk37-016.fwsc and fm1-015.fwsc; they are
 skipped otherwise.
 """
 import os
@@ -125,6 +125,12 @@ class RealImages(unittest.TestCase):
         self.assertEqual(s.conn.mem[BOOT_AREA:0x9D000], stock[BOOT_AREA:0x9D000])
         self.assertEqual(app_files_status(bytes(s.conn.mem), 0x980F), 'ok')
         self.assertTrue(os.path.exists(s.backup_path))
+
+    def test_firmware_layout_change_warned(self):
+        s = session(data('smk37-baudgirl.bin'))
+        self.assertTrue(s.plan_firmware(data('smk37-016.fwsc')).warnings)
+        s = session(data('smk37-snoop37.bin'))        # the stock layout
+        self.assertFalse(s.plan_firmware(data('smk37-016.fwsc')).warnings)
 
     def test_firmware_wrong_model_refused(self):
         s = session(data('smk37-stock.bin'))

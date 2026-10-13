@@ -126,7 +126,7 @@ class Session:
         with open(path, 'wb') as f:
             f.write(self.flash)
         meta = dict(self.info(), sha256=hashlib.sha256(self.flash).hexdigest(),
-                    saved=stamp, tool=f'fm-flasher {__version__}')
+                    saved=stamp, tool=f'm-flasher {__version__}')
         with open(path[:-4] + '.json', 'w') as f:
             json.dump(meta, f, indent=2)
         self.backup_path = path
@@ -193,6 +193,14 @@ class Session:
         if installed and installed.startswith('SMK-37 ') and installed != pkg.model:
             warnings.append(f'The unit runs {installed} firmware; this package is for the {pkg.model}. '
                             'The unit will then report itself as that model.')
+        def regions(image):
+            return {(e.name, e.addr, e.len) for e in app_table(image, self.conn.chip_key) if e.attr in (0x12, 0x92)}
+        old_regions = regions(self.flash)
+        if old_regions and old_regions != regions(padded):
+            warnings.append(f'The installed firmware ({self.analysis.firmware_text}) keeps its data in other '
+                            f'places than {pkg.identity}; what it leaves behind can confuse the new firmware '
+                            '(wrong presets, no sound). To go back to a firmware cleanly, restore a backup '
+                            'made while it was installed.')
         start = 0 if with_bootloader else BOOT_AREA
         end = len(pkg.flash)
         target = bytearray(self.flash)

@@ -30,7 +30,7 @@ class App:
         self.q = queue.Queue()
         self.session = None
         self.busy = False
-        root.title(f'FM Flasher {__version__}')
+        root.title(f'M-Flasher {__version__}')
         root.minsize(660, 560)
         pad = dict(padx=10, pady=4)
 

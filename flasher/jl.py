@@ -130,7 +130,7 @@ class Connection:
             self.p.jump(LOADER_ADDR, LOADER_ARG)
             time.sleep(0.1)
             self.chip_key = self.p.chip_key()
-            self.flash_id = self.p.flash_id()
+            self.flash_id = self.p.online_device()[1]      # JEDEC ID, as jl-uboot-tool shows it
             try:
                 self.io = min(max(self.p.buffer_size(), 256), 4096)
             except SCSIError:

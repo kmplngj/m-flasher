@@ -22,7 +22,7 @@ from .scsi import SCSIError, find_devices
 def default_backup_dir():
     home = os.path.expanduser('~')
     docs = os.path.join(home, 'Documents')
-    return os.path.join(docs if os.path.isdir(docs) else home, 'FM Flasher', 'backups')
+    return os.path.join(docs if os.path.isdir(docs) else home, 'M-Flasher', 'backups')
 
 
 def progress(done, total):
