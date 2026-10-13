@@ -1,0 +1,5 @@
+# JieLi download mode (USB disk "WL82 UBOOT1.00", 4C4A:8057): let users in
+# the wheel group and the logged-in user send it SCSI commands, so that FM
+# Flasher runs without root.
+#   sudo cp 70-fm-flasher.rules /etc/udev/rules.d/ && sudo udevadm control --reload
+SUBSYSTEM=="scsi_generic", ATTRS{idVendor}=="4c4a", ATTRS{idProduct}=="8057", MODE="0660", GROUP="wheel", TAG+="uaccess"
