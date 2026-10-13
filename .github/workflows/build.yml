@@ -32,11 +32,19 @@ jobs:
         run: >
           pyinstaller --onefile --windowed --uac-admin --name M-Flasher
           --add-data "flasher/data;flasher/data" run.py
+      - name: Zip it
+        # A zip: browsers warn about downloading a bare unsigned .exe.
+        shell: pwsh
+        run: |
+          $v = python -c "import flasher; print(flasher.__version__)"
+          New-Item -ItemType Directory pkg | Out-Null
+          Copy-Item dist/M-Flasher.exe, windows/README.txt, LICENSE pkg/
+          Compress-Archive pkg/* "M-Flasher-$v-windows.zip"
       - uses: actions/upload-artifact@v7
         with:
           name: M-Flasher-windows
-          path: dist/M-Flasher.exe
+          path: M-Flasher-*-windows.zip
       - if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v3
         with:
-          files: dist/M-Flasher.exe
+          files: M-Flasher-*-windows.zip

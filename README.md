@@ -11,10 +11,11 @@ on the unit is broken.
 
 ## Windows: getting started
 
-1. Download `M-Flasher.exe` from the [releases](../../releases) and run it.
-   Windows asks for administrator rights (needed to talk to the unit's
-   download mode). Windows may also warn that the app is unrecognised: choose
-   **More info → Run anyway**.
+1. Download `M-Flasher-…-windows.zip` from the [releases](../../releases),
+   extract it and run `M-Flasher.exe`. Windows asks for administrator rights
+   (needed to talk to the unit's download mode). The app is not signed, so the
+   first time Windows may say it protected your PC: choose **More info → Run
+   anyway**.
 2. Put the unit in **download mode** and connect it with a USB **data** cable
    (directly, not through a hub):
    - with the open bootloader installed: hold **REC** (SMK-37: **SEQ REC**)
@@ -77,8 +78,8 @@ writes anything.
 Tested on an SMK-37 Pro from Linux: identification (stock, Baud Girl,
 Snoop37), backups (identical to jl-uboot-tool's reads), installing the open
 bootloader, installing the stock firmware over Baud Girl, restoring a backup
-(the flash afterwards identical to it). Not yet tried: the Windows build, an
-FM-1.
+(the flash afterwards identical to it); the Windows build (0.1.0) on the same
+unit. Not yet tried: an FM-1.
 
 ## Linux
 
