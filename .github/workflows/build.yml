@@ -58,16 +58,18 @@ jobs:
           lipo -create -output m-flasher target/aarch64-apple-darwin/release/m-flasher target/x86_64-apple-darwin/release/m-flasher
           lipo -info m-flasher
           otool -L m-flasher
-      - name: Package
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: The app and the disk image
         run: |
-          mkdir -p pkg/m-flasher
-          cp m-flasher macos/README.txt LICENSE pkg/m-flasher/
-          (cd pkg && zip -r ../m-flasher-macos.zip m-flasher)
-          ls -l m-flasher m-flasher-macos.zip
+          v=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)
+          macos/package.sh m-flasher "$v" dist
+          mv dist/M-Flasher-$v-macos.dmg M-Flasher-macos.dmg
       - uses: actions/upload-artifact@v7
         with:
-          name: m-flasher-macos
-          path: m-flasher-macos.zip
+          name: M-Flasher-macos
+          path: M-Flasher-macos.dmg
 
   release:
     if: startsWith(github.ref, 'refs/tags/v')
@@ -84,10 +86,10 @@ jobs:
           v=${GITHUB_REF_NAME#v}
           mv M-Flasher-windows.zip M-Flasher-$v-windows.zip
           mv m-flasher-linux-x86_64.tar.gz m-flasher-$v-linux-x86_64.tar.gz
-          mv m-flasher-macos.zip m-flasher-$v-macos.zip
+          mv M-Flasher-macos.dmg M-Flasher-$v-macos.dmg
       - uses: softprops/action-gh-release@v3
         with:
           files: |
             M-Flasher-*-windows.zip
             m-flasher-*-linux-x86_64.tar.gz
-            m-flasher-*-macos.zip
+            M-Flasher-*-macos.dmg

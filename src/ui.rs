@@ -174,7 +174,7 @@ impl eframe::App for App {
             Some(d) => (d.model.replace(" (probably)", "").to_uppercase(),
                         if d.certain { "USB CONNECTED · DOWNLOAD MODE".to_string() } else { "MODEL NOT CERTAIN · CHECK BELOW".into() },
                         "FLASH 1 MiB".to_string()),
-            None if st.phase == Phase::Connecting => ("READING".into(), "FLASH READ TWICE · COMPARING".into(), format!("{}%", (st.pct * 100.0) as u32)),
+            None if st.phase == Phase::Connecting => ("READING".into(), "FLASH READ · CHECKING".into(), format!("{}%", (st.pct * 100.0) as u32)),
             None => ("NO UNIT".into(), if st.multiple { "MORE THAN ONE UNIT".into() } else { "WAITING FOR DOWNLOAD MODE".into() }, "USB".into()),
         };
         p.text_fit(372.0, 214.0, &l1, "lcd", 58.0, 470.0, LCDINK, 2.0);
@@ -282,13 +282,17 @@ impl eframe::App for App {
         };
         match (dev, st.mode) {
             (None, _) => {
-                let rows = [
+                let mut rows = vec![
                     ("SMK-37 with the open bootloader", "hold SEQ REC while switching on"),
                     ("FM-1 with the open bootloader", "hold REC while switching on"),
                     ("Felucca, SLOOP, Snoop37 running", "hold OCT- and OCT+ for 5 s"),
                     ("Then", "connect USB: a data cable, no hub"),
-                    ("Windows offers to format a disk?", "choose Cancel; the unit is found by itself"),
                 ];
+                if cfg!(windows) {
+                    rows.push(("Windows offers to format a disk?", "choose Cancel; the unit is found by itself"));
+                } else if cfg!(target_os = "macos") {
+                    rows.push(("macOS asks about a removable volume?", "choose Allow: that is the unit"));
+                }
                 for (i, (a, b)) in rows.iter().enumerate() {
                     let y = 662.0 + i as f32 * 25.0;
                     p.text(56.0, y, Align2::LEFT_CENTER, a, "tech", 15.5, LAV, 0.0);
@@ -301,7 +305,7 @@ impl eframe::App for App {
                     self.ctl.open_backups();
                 }
                 p.text(56.0, 720.0, Align2::LEFT_CENTER,
-                    "Saves the whole flash (1 MiB, read twice when the unit connected) with a .json describing it.",
+                    "Saves the whole flash (1 MiB, read and checked when the unit connected) with a .json describing it.",
                     "tech", 15.0, DIM, 0.3);
                 p.text(56.0, 744.0, Align2::LEFT_CENTER, "Nothing is written to the unit.", "tech", 15.0, DIM, 0.3);
             }

@@ -113,21 +113,24 @@ m-flasher/m-flasher
 
 ## macOS
 
-Download `m-flasher-…-macos.zip` from the [releases](../../releases) (one
-binary for Apple silicon and Intel) and extract it. macOS does not pass the
-download mode's SCSI commands through, so M-Flasher takes the unit from the
-system's disk driver and talks USB mass storage itself (libusb). Only root may
-do that, and macOS asks once to allow access to the USB device, so start it
-with sudo from Terminal (not over SSH):
+Download `M-Flasher-…-macos.dmg` from the [releases](../../releases) (for
+Apple silicon and Intel), open it and drag M-Flasher to Applications. The app
+is not signed with an Apple certificate, so the first time macOS blocks it:
+**System Settings → Privacy & Security → Open Anyway**.
 
-```sh
-cd m-flasher && xattr -d com.apple.quarantine m-flasher   # once: it is not signed
-sudo ./m-flasher            # the window; or sudo ./m-flasher info, backup, ...
-```
+macOS does not pass the download mode's SCSI commands through, so M-Flasher
+takes the unit from the system's disk driver and talks USB mass storage
+itself (libusb). Only root may do that: the app asks for your password and
+starts again through sudo, and macOS asks once to let it access files on a
+removable volume (the unit): choose **Allow**. Start it soon after connecting
+the unit: left with macOS's disk driver, the unit may leave download mode
+after about half a minute. Backups go to `~/Documents/M-Flasher/backups` and
+belong to you, not root. The command line is inside the app:
+`sudo /Applications/M-Flasher.app/Contents/MacOS/M-Flasher info`, from
+Terminal (not over SSH: macOS can ask about the volume only on the screen).
 
-Start it soon after connecting the unit: left with macOS's disk driver, the
-unit may leave download mode after about half a minute. Backups go to
-`~/Documents/M-Flasher/backups` and belong to you, not root.
+`macos/package.sh` makes the app and the disk image; `macos/render.sh`
+renders the icon and the disk image's background from their SVGs.
 
 ## Command line
 

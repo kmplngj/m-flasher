@@ -320,7 +320,7 @@ impl Controller {
                 }
             };
             let view = device_view(&unit);
-            c.log(format!("{} · {} · bootloader {} · flash read twice, identical", view.model, view.firmware, view.bootloader));
+            c.log(format!("{} · {} · bootloader {} · flash read and checked", view.model, view.firmware, view.bootloader));
             c.log(format!("Loader: {}{}", unit.dev.loader(),
                 unit.unit_id.as_ref().map(|u| format!(" · unit ID {u}")).unwrap_or_default()));
             let (n, last) = unit.dev.retries();
