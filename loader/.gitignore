@@ -1,0 +1,6 @@
+*.o
+*.elf
+*.map
+*.dis
+build.ld
+loader.bin

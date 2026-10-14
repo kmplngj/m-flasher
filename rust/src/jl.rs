@@ -1,8 +1,11 @@
-//! JieLi UBOOT1.00 (mask ROM USB download mode) and its flash loader.
+//! JieLi UBOOT1.00 (mask ROM USB download mode) and the flash loaders.
 //!
-//! The ROM accepts memory writes and a jump. The tool writes JieLi's WL82 USB
-//! loader (data/wl82loader-sdk.bin, from JieLi's AC79 SDK, Apache 2.0) to
-//! 0x01C02000 and starts it; the loader then answers the flash commands.
+//! The ROM accepts memory writes and a jump. The tool writes a loader into RAM
+//! and starts it; the loader then answers the flash commands. First choice is
+//! M-Flasher's own loader (data/mflr-loader.bin, built from ../loader: the
+//! same commands plus an on-chip CRC32, the flash's unique ID and the unit's
+//! display); if it does not answer, JieLi's WL82 USB loader from the AC79 SDK
+//! (data/wl82loader-sdk.bin, Apache 2.0). MFLASHER_LOADER=jieli forces JieLi's.
 //! Commands are 16-byte CDBs: a 16-bit opcode, big-endian arguments, padded
 //! with 0xFF. Protocol after jl-uboot-tool (MIT, (c) 2023 Andrey Grigoryev).
 
@@ -11,6 +14,16 @@ use crate::scsi::{Data, PRODUCT, Scsi, ScsiError, VENDOR};
 
 pub const LOADER: &[u8] = include_bytes!("../data/wl82loader-sdk.bin");
 const LOADER_ADDR: u32 = 0x01C0_2000;
+/// Ours, plain (scrambled for the ROM when uploaded), built for two addresses:
+/// a new one never overwrites one that is running.
+const OWN_A: (u32, &[u8]) = (0x01C2_0000, include_bytes!("../data/mflr-loader-a.bin"));
+const OWN_B: (u32, &[u8]) = (0x01C2_8000, include_bytes!("../data/mflr-loader-b.bin"));
+const IDENTIFY: u16 = 0xFC40;
+const CRC32: u16 = 0xFC41;
+const UNIQUE_ID: u16 = 0xFC42;
+const DISPLAY_ON: u16 = 0xFC43;
+const DISPLAY_TEXT: u16 = 0xFC44;
+const DISPLAY_BAR: u16 = 0xFC45;
 const LOADER_ARG: u16 = 1; // target: SPI NOR flash
 
 const WRITE_MEMORY: u16 = 0xFB06;
@@ -53,8 +66,29 @@ fn addr_len_crc(addr: u32, data: &[u8]) -> Vec<u8> {
     a
 }
 
-/// What the operations need from a unit: the identity and flash access.
+/// A line or bar on the unit's own display (our loader only).
+pub enum Show<'a> {
+    /// Board: 1 FM-1, 2 SMK-37.
+    On(u8),
+    Text(u8, &'a str, u16),
+    Bar(u8, u16),
+}
+
+/// What the operations need from a unit: the identity and flash access, and
+/// what only our loader can do (None / nothing with JieLi's).
 pub trait Flash: Send {
+    fn loader(&self) -> String {
+        "JieLi".into()
+    }
+    /// CRC32 (IEEE) of n bytes at addr, computed on the chip.
+    fn crc32(&mut self, _addr: usize, _n: usize) -> Result<Option<u32>, ScsiError> {
+        Ok(None)
+    }
+    /// The flash chip's factory-unique ID, hex.
+    fn unique_id(&mut self) -> Option<String> {
+        None
+    }
+    fn show(&mut self, _s: Show) {}
     fn path(&self) -> &str;
     fn chip_key(&self) -> u16;
     fn flash_id(&self) -> u32;
@@ -78,6 +112,10 @@ pub struct Connection<S: Scsi> {
     io: usize,
     retried: u32,
     last_retry: String,
+    /// Bytes per read command.
+    read_io: usize,
+    /// Our loader's version, if it is the one running.
+    own: Option<String>,
 }
 
 impl<S: Scsi> Connection<S> {
@@ -86,17 +124,48 @@ impl<S: Scsi> Connection<S> {
         if vendor != VENDOR || product != PRODUCT {
             return Err(ScsiError::Failed(format!("{path} is \"{vendor} {product}\", not a {VENDOR} {PRODUCT} download-mode device")));
         }
-        log("Starting the flash loader".into());
-        // The SDK's loader is stored scrambled, as the ROM wants it.
-        for (i, block) in LOADER.chunks(512).enumerate() {
-            let a = LOADER_ADDR + (i * 512) as u32;
-            dev.execute(&cdb(WRITE_MEMORY, &addr_len_crc(a, block)), Data::Out(block))?;
+        let mut c = Connection { path: path.into(), dev, chip_key: 0, flash_id: 0, io: 512, read_io: 4096,
+                                 retried: 0, last_retry: String::new(), own: None };
+        // What is running already? A loader stays registered until the unit is
+        // switched off. (Commands the ROM alone does not know just fail.)
+        let ours_running = c.identify();
+        let jieli_running = ours_running.is_none() && c.call(ONLINE_DEVICE, &[]).is_ok();
+        let bundled = c.bundled_version();
+        if jieli_running {
+            // jumping through JieLi's loader is not safe: use it as it is
+            log("JieLi's flash loader is already running: using it".into());
+        } else if let Some((v, _)) = ours_running.as_ref().filter(|(v, _)| *v == bundled) {
+            log(format!("M-Flasher loader {v} already running"));
+            c.own = Some(v.clone());
+        } else if std::env::var("MFLASHER_LOADER").as_deref() == Ok("jieli") && ours_running.is_none() {
+            log("Starting JieLi's flash loader".into());
+            // the SDK's loader is stored scrambled, as the ROM wants it
+            let blocks: Vec<Vec<u8>> = LOADER.chunks(512).map(|b| b.to_vec()).collect();
+            c.upload_and_jump(LOADER_ADDR, &blocks)?;
+        } else {
+            // ours, at the address the running one (if any) does not use
+            let (addr, image) = match &ours_running {
+                None => OWN_A,
+                Some((_, at)) if *at == OWN_B.0 => OWN_A,
+                Some(_) => OWN_B,           // at A, or an older build that does not say where
+            };
+            log(format!("Starting the M-Flasher loader {bundled}"));
+            let scrambled: Vec<Vec<u8>> = image.chunks(512).map(|b| crc_cipher(b, 0xFFFF_FFFF)).collect();
+            c.upload_and_jump(addr, &scrambled)?;
+            match c.identify() {
+                Some((v, _)) => c.own = Some(v),
+                None if ours_running.is_none() => {
+                    // ours did not start: JieLi's, which the ROM can still run
+                    log("The M-Flasher loader did not answer: starting JieLi's".into());
+                    let blocks: Vec<Vec<u8>> = LOADER.chunks(512).map(|b| b.to_vec()).collect();
+                    c.upload_and_jump(LOADER_ADDR, &blocks)?;
+                }
+                None => return Err(ScsiError::Failed("the M-Flasher loader stopped answering: switch the unit off and on".into())),
+            }
         }
-        let mut args = LOADER_ADDR.to_be_bytes().to_vec();
-        args.extend(LOADER_ARG.to_be_bytes());
-        let mut c = Connection { path: path.into(), dev, chip_key: 0, flash_id: 0, io: 512, retried: 0, last_retry: String::new() };
-        c.call(JUMP, &args)?;
-        std::thread::sleep(std::time::Duration::from_millis(100));
+        if c.own.is_some() {
+            c.read_io = 16384;
+        }
         let r = c.call(READ_KEY, &0xAC6900u32.to_be_bytes())?;
         c.chip_key = u16::from_le_bytes(crc_cipher(&[r[5], r[4]], 0xFFFF_FFFF).try_into().unwrap());
         let r = c.call(ONLINE_DEVICE, &[])?;
@@ -105,6 +174,34 @@ impl<S: Scsi> Connection<S> {
             c.io = (u32::from_be_bytes([r[0], r[1], r[2], r[3]]) as usize).clamp(256, 4096);
         }
         Ok(c)
+    }
+
+    /// Our loader's (version, address), if it is the one answering.
+    fn identify(&mut self) -> Option<(String, u32)> {
+        let r = self.call(IDENTIFY, &[]).ok()?;
+        (&r[..4] == b"MFLR").then(|| {
+            (String::from_utf8_lossy(&r[4..7]).trim_end_matches('\0').to_string(),
+             u32::from_be_bytes([r[8], r[9], r[10], r[11]]))
+        })
+    }
+
+    /// The version of the loader bundled in this build.
+    fn bundled_version(&self) -> String {
+        let img = OWN_A.1;
+        let at = img.windows(4).position(|w| w == b"MFLR").unwrap_or(0);
+        String::from_utf8_lossy(&img[at + 4..at + 7]).to_string()
+    }
+
+    fn upload_and_jump(&mut self, addr: u32, blocks: &[Vec<u8>]) -> Result<(), ScsiError> {
+        for (i, block) in blocks.iter().enumerate() {
+            let a = addr + (i * 512) as u32;
+            self.dev.execute(&cdb(WRITE_MEMORY, &addr_len_crc(a, block)), Data::Out(block))?;
+        }
+        let mut args = addr.to_be_bytes().to_vec();
+        args.extend(LOADER_ARG.to_be_bytes());
+        self.call(JUMP, &args)?;
+        std::thread::sleep(std::time::Duration::from_millis(100));
+        Ok(())
     }
 
     /// A flash command, tried up to RETRIES times: a failed transfer (Windows
@@ -156,6 +253,53 @@ impl<S: Scsi> Connection<S> {
 }
 
 impl<S: Scsi> Flash for Connection<S> {
+    fn loader(&self) -> String {
+        match &self.own {
+            Some(v) => format!("M-Flasher {v}"),
+            None => "JieLi".into(),
+        }
+    }
+
+    fn crc32(&mut self, addr: usize, n: usize) -> Result<Option<u32>, ScsiError> {
+        if self.own.is_none() {
+            return Ok(None);
+        }
+        let mut a = (addr as u32).to_be_bytes().to_vec();
+        a.extend((n as u32).to_be_bytes());
+        let r = self.call(CRC32, &a)?;
+        Ok(Some(u32::from_be_bytes([r[0], r[1], r[2], r[3]])))
+    }
+
+    fn unique_id(&mut self) -> Option<String> {
+        self.own.as_ref()?;
+        let r = self.call(UNIQUE_ID, &[]).ok()?;
+        let id = &r[..8];
+        (id.iter().any(|&b| b != 0xFF) && id.iter().any(|&b| b != 0)).then(|| id.iter().map(|b| format!("{b:02x}")).collect())
+    }
+
+    /// Best effort: a display problem must never stop a write.
+    fn show(&mut self, s: Show) {
+        if self.own.is_none() {
+            return;
+        }
+        let _ = match s {
+            Show::On(board) => self.call(DISPLAY_ON, &[board]).map(|_| ()),
+            Show::Bar(pct, color) => {
+                let mut a = vec![pct];
+                a.extend(color.to_be_bytes());
+                self.call(DISPLAY_BAR, &a).map(|_| ())
+            }
+            Show::Text(row, text, fg) => {
+                let t: Vec<u8> = text.bytes().take(20).collect();
+                let mut a = vec![row];
+                a.extend(fg.to_be_bytes());
+                a.extend(0u16.to_be_bytes());
+                a.extend((t.len() as u16).to_be_bytes());
+                self.dev.execute(&cdb(DISPLAY_TEXT, &a), Data::Out(&t))
+            }
+        };
+    }
+
     fn retries(&self) -> (u32, String) {
         (self.retried, self.last_retry.clone())
     }
@@ -173,7 +317,7 @@ impl<S: Scsi> Flash for Connection<S> {
         let mut out = vec![0u8; n];
         let mut done = 0;
         while done < n {
-            let k = self.io.min(n - done);
+            let k = self.read_io.min(n - done);
             let mut args = ((addr + done) as u32).to_be_bytes().to_vec();
             args.extend((k as u16).to_be_bytes());
             let c = cdb(READ_FLASH, &args);

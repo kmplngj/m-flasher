@@ -52,6 +52,19 @@ pub fn crc16(data: &[u8]) -> u16 {
     crc16_update(0, data)
 }
 
+/// CRC32 (IEEE, as zlib), the check our loader computes on the chip.
+pub fn crc32(data: &[u8]) -> u32 {
+    let mut table = [0u32; 256];
+    for (i, t) in table.iter_mut().enumerate() {
+        let mut c = i as u32;
+        for _ in 0..8 {
+            c = if c & 1 != 0 { 0xEDB8_8320 ^ (c >> 1) } else { c >> 1 };
+        }
+        *t = c;
+    }
+    !data.iter().fold(!0u32, |c, &b| table[((c ^ b as u32) & 0xFF) as usize] ^ (c >> 8))
+}
+
 /// JieLi's ENC cipher (its own inverse).
 pub fn enc(data: &[u8], mut key: u16) -> Vec<u8> {
     data.iter()

@@ -321,6 +321,8 @@ impl Controller {
             };
             let view = device_view(&unit);
             c.log(format!("{} · {} · bootloader {} · flash read twice, identical", view.model, view.firmware, view.bootloader));
+            c.log(format!("Loader: {}{}", unit.dev.loader(),
+                unit.unit_id.as_ref().map(|u| format!(" · unit ID {u}")).unwrap_or_default()));
             let (n, last) = unit.dev.retries();
             if n > 0 {
                 c.log(format!("{n} USB transfers had to be sent again (last: {last}): check the cable and port"));
@@ -329,6 +331,8 @@ impl Controller {
                 c.log("The model is not certain: check it under DEVICE INFO before writing".into());
             }
             let map = sector_map(&unit.flash, unit.dev.chip_key(), unit.board());
+            let mut unit = unit;
+            unit.show_on_unit();
             *c.unit.lock().unwrap() = Some(unit);
             c.with(|s| {
                 s.device = Some(view);
@@ -377,7 +381,10 @@ impl Controller {
             }
             Mode::Restore => match read("restore") {
                 None => return need(self, "Choose a backup file"),
-                Some(d) => d.and_then(|d| unit.plan_restore(&d)),
+                Some(d) => {
+                    let id = files.get("restore").and_then(|p| crate::ops::backup_unit_id(p));
+                    d.and_then(|d| unit.plan_restore(&d, id.as_deref()))
+                }
             },
             Mode::Firmware => match read("firmware") {
                 None => return need(self, "Choose a firmware package (.fwsc)"),
@@ -469,6 +476,7 @@ impl Controller {
         if let Some(b) = BOARDS.iter().copied().find(|b| b.key == key) {
             if let Some(u) = self.unit.lock().unwrap().as_mut() {
                 u.board_override = Some(b);
+                u.show_on_unit();
                 let view = device_view(u);
                 let map = sector_map(&u.flash, u.dev.chip_key(), u.board());
                 self.with(|s| {

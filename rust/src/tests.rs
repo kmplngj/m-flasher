@@ -35,11 +35,14 @@ pub struct FakeFlash {
     pub id: u32,
     pub fail_writes: usize,
     pub programmed: usize,
+    /// Behave like our loader: on-chip CRC32 and a unique ID.
+    pub own: Option<String>,
+    pub reads: usize,
 }
 
 impl FakeFlash {
     pub fn new(mem: Vec<u8>) -> Self {
-        FakeFlash { mem, key: 0x980F, id: 0xEB6014, fail_writes: 0, programmed: 0 }
+        FakeFlash { mem, key: 0x980F, id: 0xEB6014, fail_writes: 0, programmed: 0, own: None, reads: 0 }
     }
 }
 
@@ -54,8 +57,15 @@ impl Flash for FakeFlash {
         self.id
     }
     fn read(&mut self, addr: usize, n: usize, progress: &mut dyn FnMut(usize)) -> Result<Vec<u8>, ScsiError> {
+        self.reads += 1;
         progress(n);
         Ok(self.mem[addr..addr + n].to_vec())
+    }
+    fn crc32(&mut self, addr: usize, n: usize) -> Result<Option<u32>, ScsiError> {
+        Ok(self.own.as_ref().map(|_| crate::formats::crc32(&self.mem[addr..addr + n])))
+    }
+    fn unique_id(&mut self) -> Option<String> {
+        self.own.clone()
     }
     fn erase(&mut self, addr: usize, n: usize) -> Result<(), ScsiError> {
         assert!(addr % 0x1000 == 0 && n % 0x1000 == 0);
@@ -236,7 +246,7 @@ fn open_bootloader_and_back_to_stock() {
 fn restore_same_unit_other_unit_other_model() {
     let stock = need!("smk37-stock.bin");
     let mut s = session(need!("smk37-snoop37.bin"));
-    let p = s.plan_restore(&stock).unwrap();
+    let p = s.plan_restore(&stock, None).unwrap();
     assert_eq!(p.allowed, vec![(0, 0x100000)]);
     apply(&mut s, &p).unwrap();
     assert_eq!(s.dev.mem, stock);
@@ -244,9 +254,9 @@ fn restore_same_unit_other_unit_other_model() {
     other[0xC1100] ^= 0xFF;
     other[0xFF800] ^= 0xFF;
     let s = session(stock.clone());
-    let p = s.plan_restore(&other).unwrap();
+    let p = s.plan_restore(&other, None).unwrap();
     assert!(!p.warnings.is_empty() && p.sectors.is_empty());
-    assert!(matches!(s.plan_restore(&need!("fm1-stock.bin")), Err(Error::Refused(_))));
+    assert!(matches!(s.plan_restore(&need!("fm1-stock.bin"), None), Err(Error::Refused(_))));
 }
 
 #[test]
@@ -259,4 +269,40 @@ fn write_retried_then_refused() {
     let p = s.plan_firmware(&need!("smk37-016.fwsc"), false, false).unwrap();
     s.dev.fail_writes = usize::MAX;
     assert!(matches!(apply(&mut s, &p), Err(Error::Refused(_))));
+}
+
+fn own(mem: Vec<u8>, id: &str) -> FakeFlash {
+    let mut f = FakeFlash::new(mem);
+    f.own = Some(id.into());
+    f
+}
+
+#[test]
+fn own_loader_reads_once_and_verifies_by_crc32() {
+    let mut s = session_with(own(need!("smk37-snoop37.bin"), "1120050204010521"));
+    assert_eq!(s.dev.reads, 1, "one read plus the chip's CRC32");
+    assert_eq!(s.unit_id.as_deref(), Some("1120050204010521"));
+    let p = s.plan_firmware(&need!("smk37-016.fwsc"), false, false).unwrap();
+    apply(&mut s, &p).unwrap();
+    assert_eq!(s.dev.reads, 1, "verified by CRC32, not read back");
+    let stock = need!("smk37-stock.bin");
+    assert_eq!(s.dev.mem[BOOT_AREA..0x9D000], stock[BOOT_AREA..0x9D000]);
+    // a corrupted program is caught by the CRC32 and rewritten
+    let mut s = session_with(own(need!("smk37-snoop37.bin"), "x"));
+    let p = s.plan_firmware(&need!("smk37-016.fwsc"), false, false).unwrap();
+    s.dev.fail_writes = 1;
+    apply(&mut s, &p).unwrap();
+    assert_eq!(s.dev.mem[BOOT_AREA..0x9D000], stock[BOOT_AREA..0x9D000]);
+}
+
+#[test]
+fn unit_id_decides_same_unit() {
+    let stock = need!("smk37-stock.bin");
+    let mut other = stock.clone();
+    other[0xC1100] ^= 0xFF;             // factory data differs ...
+    let s = session_with(own(stock.clone(), "aaaaaaaaaaaaaaaa"));
+    let p = s.plan_restore(&other, Some("aaaaaaaaaaaaaaaa")).unwrap();
+    assert_eq!(p.allowed, vec![(0, 0x100000)], "... but the IDs say it is this unit's backup");
+    let p = s.plan_restore(&stock, Some("bbbbbbbbbbbbbbbb")).unwrap();
+    assert!(!p.warnings.is_empty() && p.allowed != vec![(0, 0x100000)], "identical data, another unit's ID");
 }

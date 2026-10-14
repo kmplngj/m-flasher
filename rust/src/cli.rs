@@ -104,6 +104,7 @@ fn main(args: Vec<String>) -> Result<(), Error> {
     if let Some(b) = board {
         s.board_override = Some(board_from_key(&b).ok_or_else(|| Error::Refused(format!("unknown board {b}")))?);
     }
+    s.show_on_unit();
     for (k, v) in s.info() {
         println!("  {k:11} {v}");
     }
@@ -117,7 +118,10 @@ fn main(args: Vec<String>) -> Result<(), Error> {
             println!("Backup saved: {}", p.display());
             return Ok(());
         }
-        "restore" => s.plan_restore(&read(pos.get(1).ok_or_else(|| Error::Refused(USAGE.into()))?)?)?,
+        "restore" => {
+            let f = pos.get(1).ok_or_else(|| Error::Refused(USAGE.into()))?;
+            s.plan_restore(&read(f)?, crate::ops::backup_unit_id(std::path::Path::new(f)).as_deref())?
+        }
         "firmware" => s.plan_firmware(&read(pos.get(1).ok_or_else(|| Error::Refused(USAGE.into()))?)?, with_boot, wipe)?,
         _ => match (stock, file) {
             (Some(p), _) => s.plan_bootloader(None, Some(&read(&p)?))?,

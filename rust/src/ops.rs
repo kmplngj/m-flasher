@@ -9,10 +9,10 @@
 
 use crate::boards::{Analysis, BOARDS, Board, CHIP_KEY, FLASH_SIZE};
 use crate::formats::{
-    AppStatus, BOOT_AREA, Package, SECTOR, app_files_status, app_table, bankcb_check, bootloader_identity,
+    AppStatus, BOOT_AREA, Package, SECTOR, app_files_status, crc32, app_table, bankcb_check, bootloader_identity,
     build_boot_area, stored_bootloader,
 };
-use crate::jl::Flash;
+use crate::jl::{Flash, Show};
 use crate::scsi::ScsiError;
 use sha2::{Digest, Sha256};
 use std::fmt;
@@ -132,6 +132,21 @@ pub struct Session<F: Flash> {
     pub backup_dir: PathBuf,
     pub backup_path: Option<PathBuf>,
     pub board_override: Option<&'static Board>,
+    /// The flash chip's factory-unique ID (our loader only): which unit this is.
+    pub unit_id: Option<String>,
+    /// The unit's own display is showing our screens.
+    pub display: bool,
+}
+
+// the unit's display: colours (RGB565) and the screens' text (its font has
+// A-Z, 0-9 and - . / : < > + ? only)
+const MINT: u16 = 0x7F57;
+const LAV: u16 = 0xB51C;
+const AMBER: u16 = 0xFDA0;
+const WHITE: u16 = 0xFFFF;
+
+fn screen_text(s: &str) -> String {
+    s.to_uppercase().chars().map(|c| if c.is_ascii_alphanumeric() || " -./:<>+?".contains(c) { c } else { ' ' }).collect()
 }
 
 impl<F: Flash> Session<F> {
@@ -141,15 +156,27 @@ impl<F: Flash> Session<F> {
             log(format!("Note: chip key 0x{:04X} (0x{CHIP_KEY:04X} expected)", dev.chip_key()));
         }
         log("Reading the flash".into());
-        let a = dev.read(0, FLASH_SIZE, &mut |d| progress(d, 2 * FLASH_SIZE))?;
-        log("Reading it again to compare".into());
-        let b = dev.read(0, FLASH_SIZE, &mut |d| progress(FLASH_SIZE + d, 2 * FLASH_SIZE))?;
-        if a != b {
-            return refuse("the two reads of the flash differ: the USB connection is unreliable. Nothing was written. \
-                           Try another cable or port, without a hub.");
+        let a = dev.read(0, FLASH_SIZE, &mut |d| progress(d, FLASH_SIZE))?;
+        // The read is checked: by the loader's CRC32 of the whole flash, computed
+        // on the chip (ours, under a second), or by reading it all again (JieLi's).
+        match dev.crc32(0, FLASH_SIZE)? {
+            Some(c) if c == crc32(&a) => log("Checked: the chip's CRC32 of the flash matches the read".into()),
+            check => {
+                if check.is_some() {
+                    log("The chip's CRC32 does not match the read: reading it again".into());
+                } else {
+                    log("Reading it again to compare".into());
+                }
+                let b = dev.read(0, FLASH_SIZE, &mut |d| progress(d, FLASH_SIZE))?;
+                if a != b || check.is_some_and(|c| c != crc32(&b)) {
+                    return refuse("two reads of the flash differ: the USB connection is unreliable. Nothing was written. \
+                                   Try another cable or port, without a hub.");
+                }
+            }
         }
         let analysis = Analysis::new(&a, Some(dev.flash_id()), dev.chip_key());
-        Ok(Session { dev, flash: a, analysis, backup_dir, backup_path: None, board_override: None })
+        let unit_id = dev.unique_id();
+        Ok(Session { dev, flash: a, analysis, backup_dir, backup_path: None, board_override: None, unit_id, display: false })
     }
 
     pub fn board(&self) -> Option<&'static Board> {
@@ -169,7 +196,32 @@ impl<F: Flash> Session<F> {
             ("app", self.analysis.app_status.text().to_string()),
             ("chip key", format!("0x{:04X}", self.dev.chip_key())),
             ("flash", format!("0x{:06X}", self.dev.flash_id())),
+            ("unit id", self.unit_id.clone().unwrap_or_else(|| "–".into())),
+            ("loader", self.dev.loader()),
         ]
+    }
+
+    /// Show our screens on the unit's own display, if the loader can and the
+    /// model (which says where the display is wired) is known.
+    pub fn show_on_unit(&mut self) {
+        let Some(board) = self.board() else { return };
+        if self.board_override.is_none() && !self.analysis.certain {
+            return;
+        }
+        self.dev.show(Show::On(if board.key == "fm1" { 1 } else { 2 }));
+        self.display = true;
+        let firmware = screen_text(&self.analysis.firmware_text);
+        self.screen(&[(1, " M-FLASHER", MINT), (3, " CONNECTED", WHITE), (5, &format!(" {}", screen_text(board.name)), LAV),
+                      (6, &format!(" {firmware}"), LAV), (12, " READY", MINT)]);
+    }
+
+    fn screen(&mut self, lines: &[(u8, &str, u16)]) {
+        if !self.display {
+            return;
+        }
+        for &(row, text, color) in lines {
+            self.dev.show(Show::Text(row, text, color));
+        }
     }
 
     pub fn save_backup(&mut self, dir: Option<&Path>) -> Result<PathBuf, Error> {
@@ -191,7 +243,9 @@ impl<F: Flash> Session<F> {
         Ok(path)
     }
 
-    pub fn plan_restore(&self, data: &[u8]) -> Result<Plan, Error> {
+    /// backup_unit: the unit ID saved with the backup, if any. When both it and
+    /// this unit's are known, they decide whether it is this unit's backup.
+    pub fn plan_restore(&self, data: &[u8], backup_unit: Option<&str>) -> Result<Plan, Error> {
         if data.len() != FLASH_SIZE {
             return refuse(format!("not a full backup: {} bytes, {FLASH_SIZE} expected", data.len()));
         }
@@ -203,7 +257,10 @@ impl<F: Flash> Session<F> {
             }
         }
         let factory: &[(usize, usize)] = board.map(|b| b.factory).unwrap_or(&[(0xFF000, FLASH_SIZE)]);
-        let same_unit = factory.iter().all(|&(a, b)| data[a..b] == self.flash[a..b] || self.flash[a..b].iter().all(|&x| x == 0xFF));
+        let same_unit = match (backup_unit, self.unit_id.as_deref()) {
+            (Some(b), Some(u)) => b == u,
+            _ => factory.iter().all(|&(a, b)| data[a..b] == self.flash[a..b] || self.flash[a..b].iter().all(|&x| x == 0xFF)),
+        };
         let (mut notes, mut warnings) = (vec![], vec![]);
         let allowed = if same_unit {
             notes.push("The whole flash is restored, the bootloader included.".into());
@@ -227,8 +284,10 @@ impl<F: Flash> Session<F> {
             if at < FLASH_SIZE {
                 allowed.push((at, FLASH_SIZE));
             }
-            warnings.push(format!("This backup seems to come from another unit: its factory data ({}: calibration, \
-                                   Bluetooth address) is not restored, this unit keeps its own.", ranges_text(factory)));
+            warnings.push(format!("This backup {} another unit: its factory data ({}: calibration, Bluetooth address) is \
+                                   not restored, this unit keeps its own.",
+                                  if backup_unit.is_some() && self.unit_id.is_some() { "is from" } else { "seems to come from" },
+                                  ranges_text(factory)));
             allowed
         };
         let mut target = self.flash.clone();
@@ -345,6 +404,11 @@ impl<F: Flash> Session<F> {
             let p = self.save_backup(None)?;
             log(format!("Backup saved: {}", p.display()));
         }
+        let what = if plan.title.starts_with("Install firmware") { " INSTALL FIRMWARE" }
+            else if plan.title.starts_with("Restore") { " RESTORE BACKUP" } else { " BOOTLOADER" };
+        let total = plan.sectors.len();
+        self.screen(&[(3, what, WHITE), (5, " WRITING", WHITE), (6, "", WHITE), (12, " DO NOT SWITCH OFF", AMBER)]);
+        let (mut done, mut shown) = (0usize, usize::MAX);
         for (a, b) in plan.runs() {
             let want = &plan.target[a..b];
             let mut attempt = 1;
@@ -352,11 +416,29 @@ impl<F: Flash> Session<F> {
                 log(format!("Writing 0x{a:05X}-0x{:05X}{}", b - 1, if attempt == 2 { " (again)" } else { "" }));
                 event(Event::Erase(a));
                 self.dev.erase(a, b - a)?;
-                self.dev.program(a, want, &mut |n| event(Event::Write(a + n)))?;
-                let got = self.dev.read(a, b - a, &mut |n| event(Event::Verify(a + n)))?;
-                if got == want {
+                // sector by sector, so that the unit's display can follow
+                for s in (a..b).step_by(SECTOR) {
+                    self.dev.program(s, &plan.target[s..s + SECTOR], &mut |n| event(Event::Write(s + n)))?;
+                    let pct = 100 * (done + (s + SECTOR - a) / SECTOR) / total;
+                    if self.display && pct / 2 != shown / 2 {
+                        shown = pct;
+                        self.dev.show(Show::Bar(pct as u8, MINT));
+                        let t = format!(" {pct:3}%  {}/{total}", done + (s + SECTOR - a) / SECTOR);
+                        self.dev.show(Show::Text(13, &t, MINT));
+                    }
+                }
+                // verify: the chip's CRC32 of what is now there (ours), or read it all back
+                let ok = match self.dev.crc32(a, b - a)? {
+                    Some(c) => {
+                        event(Event::Verify(b));
+                        c == crc32(want)
+                    }
+                    None => self.dev.read(a, b - a, &mut |n| event(Event::Verify(a + n)))? == want,
+                };
+                if ok {
                     break;
                 }
+                let got = self.dev.read(a, b - a, &mut |_| {})?;
                 if attempt == 2 {
                     self.flash[a..b].copy_from_slice(&got);
                     return refuse(format!("0x{a:05X}-0x{:05X} does not read back as written. Do not switch the unit off: \
@@ -366,11 +448,27 @@ impl<F: Flash> Session<F> {
                 attempt += 1;
             }
             self.flash[a..b].copy_from_slice(want);
+            done += (b - a) / SECTOR;
         }
         self.analysis = Analysis::new(&self.flash, Some(self.dev.flash_id()), self.dev.chip_key());
-        log("Done: everything written was read back and matches".into());
+        if self.display {
+            self.dev.show(Show::Bar(100, MINT));
+        }
+        self.screen(&[(5, " DONE - VERIFIED", MINT), (13, &format!(" {total} SECTORS OK"), MINT), (12, " SWITCH OFF AND ON", WHITE)]);
+        log(if self.dev.loader().starts_with("M-Flasher") {
+            "Done: everything written is verified (the chip's CRC32 matches)".into()
+        } else {
+            "Done: everything written was read back and matches".into()
+        });
         Ok(())
     }
+}
+
+/// The unit ID saved in a backup's .json, if any.
+pub fn backup_unit_id(backup: &Path) -> Option<String> {
+    let json = std::fs::read_to_string(backup.with_extension("json")).ok()?;
+    let id = json.split("\"unit id\": \"").nth(1)?.split('"').next()?;
+    (id.len() == 16 && id.chars().all(|c| c.is_ascii_hexdigit())).then(|| id.to_string())
 }
 
 /// The model by its key (for the command line's --board).
