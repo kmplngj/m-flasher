@@ -2,7 +2,7 @@
 //!
 //! The ROM accepts memory writes and a jump. The tool writes a loader into RAM
 //! and starts it; the loader then answers the flash commands. First choice is
-//! M-Flasher's own loader (data/mflr-loader.bin, built from ../loader: the
+//! M-Flasher's own loader (data/mflr-loader-a/b.bin, built from loader/: the
 //! same commands plus an on-chip CRC32, the flash's unique ID and the unit's
 //! display); if it does not answer, JieLi's WL82 USB loader from the AC79 SDK
 //! (data/wl82loader-sdk.bin, Apache 2.0). MFLASHER_LOADER=jieli forces JieLi's.

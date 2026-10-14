@@ -49,7 +49,7 @@ PC's. M-Flasher logs the read speed and a tip when the port is slow.
 
 **Build.** With JieLi's pi32v2 toolchain: `./build.sh 0x01C20000` (and
 `0x01C28000`: the app carries both, so a new loader is never written over a
-running one). `rust/data/mflr-loader-a.bin` and `-b.bin` are the builds.
+running one). `data/mflr-loader-a.bin` and `-b.bin` are the builds.
 
 **Sources.** The SPI flash, efuse (P33) and display code and the register map
 come from the [open bootloader](https://github.com/jvitkauskas/fm1-bootloader)

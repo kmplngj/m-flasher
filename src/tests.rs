@@ -150,7 +150,7 @@ fn reads_must_match() {
 }
 
 #[test]
-fn analysis_matches_the_python_version() {
+fn analysis_identifies_the_known_images() {
     let a = Analysis::new(&need!("smk37-stock.bin"), Some(0xEB6014), 0x980F);
     assert_eq!(a.board.unwrap().key, "smk37");
     assert!(a.certain);
@@ -168,7 +168,7 @@ fn analysis_matches_the_python_version() {
 }
 
 #[test]
-fn sector_maps_match_the_python_version() {
+fn sector_maps_of_the_known_images() {
     let m = sector_map(&need!("smk37-stock.bin"), 0x980F, Some(&SMK37));
     assert_eq!(region_ranges(&m, Region::Firmware), "04-9C");
     assert_eq!(region_ranges(&m, Region::Free), "EB-F3, FE");

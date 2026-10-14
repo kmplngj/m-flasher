@@ -2,50 +2,66 @@ name: build
 
 on:
   push:
-    branches: [main]
+    branches: [main, rust]
     tags: ['v*']
   pull_request:
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
+  linux:
+    # built on 22.04: the binary runs on glibc 2.35 and newer
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
+      - run: cargo test --release
+      - run: cargo build --release
+      - name: Package
+        run: |
+          mkdir -p pkg/m-flasher
+          cp target/release/m-flasher linux/70-m-flasher.rules LICENSE pkg/m-flasher/
+          tar -C pkg -czf m-flasher-linux-x86_64.tar.gz m-flasher
+          ls -l target/release/m-flasher m-flasher-linux-x86_64.tar.gz
+      - uses: actions/upload-artifact@v7
         with:
-          python-version: '3.12'
-      - run: python -m unittest -v
+          name: m-flasher-linux-x86_64
+          path: m-flasher-linux-x86_64.tar.gz
 
   windows:
-    needs: test
     runs-on: windows-latest
-    permissions:
-      contents: write             # to publish the release on a tag
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
-        with:
-          python-version: '3.12'
-      - run: python -m unittest -v
-      - run: pip install pyinstaller==6.11.1 pywebview==6.2.1
-      - name: Build M-Flasher.exe
-        run: >
-          pyinstaller --onefile --windowed --uac-admin --name M-Flasher
-          --add-data "flasher/data;flasher/data" --add-data "flasher/ui;flasher/ui"
-          --collect-all webview --hidden-import clr run.py
-      - name: Zip it
-        # A zip: browsers warn about downloading a bare unsigned .exe.
+      - run: cargo test --release
+      - run: cargo build --release
+      - name: Package
+        # a zip: browsers warn about downloading a bare unsigned .exe
         shell: pwsh
         run: |
-          $v = python -c "import flasher; print(flasher.__version__)"
           New-Item -ItemType Directory pkg | Out-Null
-          Copy-Item dist/M-Flasher.exe, windows/README.txt, LICENSE pkg/
-          Compress-Archive pkg/* "M-Flasher-$v-windows.zip"
+          Copy-Item target/release/m-flasher.exe pkg/M-Flasher.exe
+          Copy-Item windows/README.txt, LICENSE pkg/
+          Compress-Archive pkg/* M-Flasher-windows.zip
+          Get-Item pkg/M-Flasher.exe, M-Flasher-windows.zip | Format-Table Name, Length
       - uses: actions/upload-artifact@v7
         with:
           name: M-Flasher-windows
-          path: M-Flasher-*-windows.zip
-      - if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v3
+          path: M-Flasher-windows.zip
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [linux, windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v7
         with:
-          files: M-Flasher-*-windows.zip
+          merge-multiple: true
+      - name: Name the files after the version
+        run: |
+          v=${GITHUB_REF_NAME#v}
+          mv M-Flasher-windows.zip M-Flasher-$v-windows.zip
+          mv m-flasher-linux-x86_64.tar.gz m-flasher-$v-linux-x86_64.tar.gz
+      - uses: softprops/action-gh-release@v3
+        with:
+          files: |
+            M-Flasher-*-windows.zip
+            m-flasher-*-linux-x86_64.tar.gz
