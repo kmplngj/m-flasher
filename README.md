@@ -120,9 +120,10 @@ is not signed with an Apple certificate, so the first time macOS blocks it:
 
 macOS does not pass the download mode's SCSI commands through, so M-Flasher
 takes the unit from the system's disk driver and talks USB mass storage
-itself (libusb). Only root may do that: the app asks for your password and
-starts again through sudo, and macOS asks once to let it access files on a
-removable volume (the unit): choose **Allow**. Start it soon after connecting
+itself (libusb). Only root may take a device from its driver: when the app
+finds the unit it asks for your password (the system's dialog) and does just
+that, then works with the unit as you. macOS asks once to let it access files
+on a removable volume (the unit): choose **Allow**. Start it soon after connecting
 the unit: left with macOS's disk driver, the unit may leave download mode
 after about half a minute. Backups go to `~/Documents/M-Flasher/backups` and
 belong to you, not root. The command line is inside the app:

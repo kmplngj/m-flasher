@@ -21,7 +21,7 @@ pub struct Device {
     ep_in: u8,
     ep_out: u8,
     tag: u32,
-    /// The system's driver was detached from the interface.
+    /// Linux: the disk driver was detached from the interface.
     detached: bool,
 }
 
@@ -40,56 +40,123 @@ fn path_of(d: &rusb::Device<GlobalContext>) -> String {
     format!("usb:{}-{}", d.bus_number(), d.address())
 }
 
-impl Device {
-    pub fn open(path: &str) -> Result<Device, ScsiError> {
-        let devices = rusb::devices().map_err(|e| failed("cannot list the USB devices", e))?;
-        let dev = devices
-            .iter()
-            .find(|d| path_of(d) == path)
-            .ok_or_else(|| ScsiError::Failed(format!("{path}: the unit is no longer connected")))?;
-        // the mass-storage interface and its two bulk endpoints
-        let config = dev.active_config_descriptor().map_err(|e| failed("cannot read the USB configuration", e))?;
-        let mut found = None;
-        for iface in config.interfaces() {
-            for alt in iface.descriptors().filter(|a| a.class_code() == 8) {
-                let bulk = |dir| {
-                    alt.endpoint_descriptors()
-                        .find(|e| e.transfer_type() == TransferType::Bulk && e.direction() == dir)
-                        .map(|e| e.address())
-                };
-                if let (Some(i), Some(o)) = (bulk(Direction::In), bulk(Direction::Out)) {
-                    found = Some((alt.interface_number(), i, o));
-                }
+fn is_root() -> bool {
+    // SAFETY: a plain libc call without arguments
+    unsafe { libc::geteuid() == 0 }
+}
+
+/// The USB device of the unit at path, and its mass-storage interface with
+/// its two bulk endpoints.
+fn find(path: &str) -> Result<(rusb::Device<GlobalContext>, u8, u8, u8), ScsiError> {
+    let devices = rusb::devices().map_err(|e| failed("cannot list the USB devices", e))?;
+    let dev = devices
+        .iter()
+        .find(|d| path_of(d) == path)
+        .ok_or_else(|| ScsiError::Failed(format!("{path}: the unit is no longer connected")))?;
+    let config = dev.active_config_descriptor().map_err(|e| failed("cannot read the USB configuration", e))?;
+    for iface in config.interfaces() {
+        for alt in iface.descriptors().filter(|a| a.class_code() == 8) {
+            let bulk = |dir| {
+                alt.endpoint_descriptors()
+                    .find(|e| e.transfer_type() == TransferType::Bulk && e.direction() == dir)
+                    .map(|e| e.address())
+            };
+            if let (Some(i), Some(o)) = (bulk(Direction::In), bulk(Direction::Out)) {
+                return Ok((dev, alt.interface_number(), i, o));
             }
         }
-        let (iface, ep_in, ep_out) =
-            found.ok_or_else(|| ScsiError::Failed(format!("{path}: no USB mass-storage interface")))?;
+    }
+    Err(ScsiError::Failed(format!("{path}: no USB mass-storage interface")))
+}
+
+/// macOS, as root: take the unit from the disk driver and leave it without
+/// one (until it is unplugged), for a normal process to claim. The app runs
+/// this through the system's authorization dialog (`--take-unit PATH`).
+#[cfg(target_os = "macos")]
+pub fn take_from_disk_driver(path: &str) -> Result<(), ScsiError> {
+    let (dev, iface, _, _) = find(path)?;
+    let handle = dev.open().map_err(|e| failed("cannot open the unit", e))?;
+    handle.detach_kernel_driver(iface).map_err(|e| match e {
+        rusb::Error::Access => needs_root(e),
+        e => failed("cannot take the unit from the system's USB disk driver", e),
+    })
+}
+
+/// macOS, not root: take_from_disk_driver as root, after the system's
+/// authorization dialog (password or Touch ID).
+#[cfg(target_os = "macos")]
+fn take_with_authorization(path: &str) -> Result<(), ScsiError> {
+    let exe = std::env::current_exe().map_err(|e| ScsiError::Failed(e.to_string()))?;
+    let sh = |s: &str| format!("'{}'", s.replace('\'', "'\\''"));
+    let cmd = format!("{} --take-unit {}", sh(&exe.to_string_lossy()), sh(path));
+    let script = format!(
+        "do shell script \"{}\" with prompt \"M-Flasher needs to take the unit from macOS's disk driver.\" \
+         with administrator privileges",
+        cmd.replace('\\', "\\\\").replace('"', "\\\"")
+    );
+    let ok = std::process::Command::new("osascript").args(["-e", &script]).status().is_ok_and(|s| s.success());
+    if ok {
+        Ok(())
+    } else {
+        Err(ScsiError::NeedsAdmin(
+            "macOS's disk driver holds the unit: M-Flasher needs an administrator's permission to take it".into(),
+        ))
+    }
+}
+
+impl Device {
+    pub fn open(path: &str) -> Result<Device, ScsiError> {
+        match Self::claim(path) {
+            // macOS, a normal process: root takes the unit from the disk
+            // driver, then this process claims it
+            #[cfg(target_os = "macos")]
+            Err(ScsiError::NeedsAdmin(_)) if !is_root() => {
+                take_with_authorization(path)?;
+                Self::claim(path)
+            }
+            r => r,
+        }
+    }
+
+    fn claim(path: &str) -> Result<Device, ScsiError> {
+        let (dev, iface, ep_in, ep_out) = find(path)?;
         let handle = dev.open().map_err(|e| match e {
             rusb::Error::Access => needs_root(e),
             e => failed("cannot open the unit", e),
         })?;
-        // the system's disk driver lets go of the interface (on macOS: of
-        // the whole device, which needs root), and gets it back on drop
-        // (libusb on macOS says no driver is attached when the disk driver
-        // is: detach there regardless)
-        let detached = cfg!(target_os = "macos") || handle.kernel_driver_active(iface).unwrap_or(false);
-        if detached {
+        // Linux: the disk driver lets go of the interface, and gets it back on drop
+        let mut detached = false;
+        if !cfg!(target_os = "macos") && handle.kernel_driver_active(iface).unwrap_or(false) {
             handle.detach_kernel_driver(iface).map_err(|e| match e {
                 rusb::Error::Access => needs_root(e),
                 e => failed("cannot take the unit from the system's USB disk driver", e),
             })?;
+            detached = true;
         }
-        // after a capture macOS takes a moment to offer the interface again
         let mut claimed = handle.claim_interface(iface);
-        for _ in 0..20 {
-            if !matches!(claimed, Err(rusb::Error::Other | rusb::Error::Busy)) {
-                break;
+        // macOS: the disk driver holds it (libusb cannot tell: it says no
+        // driver is attached). Root can take the whole device from it.
+        if claimed.is_err() && cfg!(target_os = "macos") {
+            if !is_root() {
+                return Err(ScsiError::NeedsAdmin("macOS's disk driver holds the unit".into()));
             }
-            std::thread::sleep(Duration::from_millis(100));
-            claimed = handle.claim_interface(iface);
+            handle.detach_kernel_driver(iface).map_err(|e| failed("cannot take the unit from macOS's disk driver", e))?;
+            // after a capture macOS takes a moment to offer the interface again
+            for _ in 0..10 {
+                std::thread::sleep(Duration::from_millis(100));
+                claimed = handle.claim_interface(iface);
+                if claimed.is_ok() {
+                    break;
+                }
+            }
         }
         claimed.map_err(|e| match e {
             rusb::Error::Access | rusb::Error::Busy => needs_root(e),
+            e if cfg!(target_os = "macos") => ScsiError::Failed(format!(
+                "macOS did not let M-Flasher use the unit ({e}). It asks once to allow access to files on \
+                 a removable volume: if that was refused, allow it in System Settings → Privacy & Security \
+                 → Files & Folders. (Over SSH macOS cannot ask.)"
+            )),
             e => failed("cannot take the unit's USB interface", e),
         })?;
         Ok(Device { handle, iface, ep_in, ep_out, tag: 0, detached })
@@ -187,10 +254,10 @@ impl super::Scsi for Device {
 impl Drop for Device {
     fn drop(&mut self) {
         let _ = self.handle.release_interface(self.iface);
-        // Linux: the disk driver gets the interface back. macOS would re-enumerate
-        // the device for that, which makes the chip leave download mode: there it
-        // stays without a driver until it is unplugged.
-        if self.detached && !cfg!(target_os = "macos") {
+        // Linux: the disk driver gets the interface back. (macOS would
+        // re-enumerate the device for that, which makes the chip leave download
+        // mode: there it stays without a driver until it is unplugged.)
+        if self.detached {
             let _ = self.handle.attach_kernel_driver(self.iface);
         }
     }
