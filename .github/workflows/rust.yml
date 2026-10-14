@@ -1,0 +1,50 @@
+name: rust
+
+on:
+  push:
+    branches: [main, rust]
+    paths: ['rust/**', '.github/workflows/rust.yml']
+  pull_request:
+    paths: ['rust/**', '.github/workflows/rust.yml']
+
+defaults:
+  run:
+    working-directory: rust
+
+jobs:
+  linux:
+    # built on 22.04: the binary runs on glibc 2.35 and newer
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v7
+      - run: cargo test --release
+      - run: cargo build --release
+      - name: Package
+        run: |
+          mkdir -p pkg/m-flasher
+          cp target/release/m-flasher ../linux/70-m-flasher.rules ../LICENSE pkg/m-flasher/
+          tar -C pkg -czf m-flasher-linux-x86_64.tar.gz m-flasher
+          ls -l target/release/m-flasher m-flasher-linux-x86_64.tar.gz
+      - uses: actions/upload-artifact@v7
+        with:
+          name: m-flasher-linux-x86_64
+          path: rust/m-flasher-linux-x86_64.tar.gz
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: cargo test --release
+      - run: cargo build --release
+      - name: Package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory pkg | Out-Null
+          Copy-Item target/release/m-flasher.exe pkg/M-Flasher.exe
+          Copy-Item ../windows/README.txt, ../LICENSE pkg/
+          Compress-Archive pkg/* M-Flasher-windows.zip
+          Get-Item pkg/M-Flasher.exe, M-Flasher-windows.zip | Format-Table Name, Length
+      - uses: actions/upload-artifact@v7
+        with:
+          name: M-Flasher-windows
+          path: rust/M-Flasher-windows.zip
