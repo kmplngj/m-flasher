@@ -69,56 +69,8 @@ fn find(path: &str) -> Result<(rusb::Device<GlobalContext>, u8, u8, u8), ScsiErr
     Err(ScsiError::Failed(format!("{path}: no USB mass-storage interface")))
 }
 
-/// macOS, as root: take the unit from the disk driver and leave it without
-/// one (until it is unplugged), for a normal process to claim. The app runs
-/// this through the system's authorization dialog (`--take-unit PATH`).
-#[cfg(target_os = "macos")]
-pub fn take_from_disk_driver(path: &str) -> Result<(), ScsiError> {
-    let (dev, iface, _, _) = find(path)?;
-    let handle = dev.open().map_err(|e| failed("cannot open the unit", e))?;
-    handle.detach_kernel_driver(iface).map_err(|e| match e {
-        rusb::Error::Access => needs_root(e),
-        e => failed("cannot take the unit from the system's USB disk driver", e),
-    })
-}
-
-/// macOS, not root: take_from_disk_driver as root, after the system's
-/// authorization dialog (password or Touch ID).
-#[cfg(target_os = "macos")]
-fn take_with_authorization(path: &str) -> Result<(), ScsiError> {
-    let exe = std::env::current_exe().map_err(|e| ScsiError::Failed(e.to_string()))?;
-    let sh = |s: &str| format!("'{}'", s.replace('\'', "'\\''"));
-    let cmd = format!("{} --take-unit {}", sh(&exe.to_string_lossy()), sh(path));
-    let script = format!(
-        "do shell script \"{}\" with prompt \"M-Flasher needs to take the unit from macOS's disk driver.\" \
-         with administrator privileges",
-        cmd.replace('\\', "\\\\").replace('"', "\\\"")
-    );
-    let ok = std::process::Command::new("osascript").args(["-e", &script]).status().is_ok_and(|s| s.success());
-    if ok {
-        Ok(())
-    } else {
-        Err(ScsiError::NeedsAdmin(
-            "macOS's disk driver holds the unit: M-Flasher needs an administrator's permission to take it".into(),
-        ))
-    }
-}
-
 impl Device {
     pub fn open(path: &str) -> Result<Device, ScsiError> {
-        match Self::claim(path) {
-            // macOS, a normal process: root takes the unit from the disk
-            // driver, then this process claims it
-            #[cfg(target_os = "macos")]
-            Err(ScsiError::NeedsAdmin(_)) if !is_root() => {
-                take_with_authorization(path)?;
-                Self::claim(path)
-            }
-            r => r,
-        }
-    }
-
-    fn claim(path: &str) -> Result<Device, ScsiError> {
         let (dev, iface, ep_in, ep_out) = find(path)?;
         let handle = dev.open().map_err(|e| match e {
             rusb::Error::Access => needs_root(e),
@@ -138,7 +90,7 @@ impl Device {
         // driver is attached). Root can take the whole device from it.
         if claimed.is_err() && cfg!(target_os = "macos") {
             if !is_root() {
-                return Err(ScsiError::NeedsAdmin("macOS's disk driver holds the unit".into()));
+                return Err(ScsiError::NeedsAdmin("macOS's disk driver holds the unit: run M-Flasher with sudo".into()));
             }
             handle.detach_kernel_driver(iface).map_err(|e| failed("cannot take the unit from macOS's disk driver", e))?;
             // after a capture macOS takes a moment to offer the interface again
@@ -154,8 +106,8 @@ impl Device {
             rusb::Error::Access | rusb::Error::Busy => needs_root(e),
             e if cfg!(target_os = "macos") => ScsiError::Failed(format!(
                 "macOS did not let M-Flasher use the unit ({e}). It asks once to allow access to files on \
-                 a removable volume: if that was refused, allow it in System Settings → Privacy & Security \
-                 → Files & Folders. (Over SSH macOS cannot ask.)"
+                 a removable volume: if that was refused, allow it in System Settings > Privacy & Security \
+                 > Files & Folders. (Over SSH macOS cannot ask.)"
             )),
             e => failed("cannot take the unit's USB interface", e),
         })?;

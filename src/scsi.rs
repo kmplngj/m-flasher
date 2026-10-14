@@ -361,5 +361,3 @@ mod imp {
 }
 
 pub use imp::{Device, find_devices};
-#[cfg(target_os = "macos")]
-pub use imp::take_from_disk_driver;

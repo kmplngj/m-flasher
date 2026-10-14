@@ -289,7 +289,7 @@ impl eframe::App for App {
                     ("Then", "connect USB: a data cable, no hub"),
                 ];
                 if cfg!(target_os = "macos") {
-                    rows.push(("macOS asks about a removable volume?", "choose Allow: that is the unit"));
+                    rows.push(("Removable volume prompt", "choose Allow: that is the unit"));
                 }
                 for (i, (a, b)) in rows.iter().enumerate() {
                     let y = 662.0 + i as f32 * 25.0;
