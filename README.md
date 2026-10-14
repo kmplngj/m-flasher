@@ -111,6 +111,8 @@ sudo cp m-flasher/70-m-flasher.rules /etc/udev/rules.d/ && sudo udevadm control 
 m-flasher/m-flasher
 ```
 
+`m-flasher.png` is the icon, for a launcher of your own.
+
 ## macOS
 
 Download `M-Flasher-…-macos.dmg` from the [releases](../../releases) (for
@@ -190,7 +192,7 @@ GitHub Actions builds the Linux, Windows and macOS packages
 MIT, see [LICENSE](LICENSE); the loader in `loader/` is Apache 2.0. Bundled:
 JieLi's WL82 USB loader (from the AC79 SDK, Apache 2.0), the open bootloader
 builds (Apache 2.0), see [data/NOTICE.md](data/NOTICE.md), and the window's
-fonts (OFL, `assets/OFL-*.txt`). Thanks to kagaimiq for
+fonts (OFL, see [assets/README.md](assets/README.md)). Thanks to kagaimiq for
 jl-uboot-tool, and to the
 [MvaveFM1Unbricker](https://github.com/Quixotic7/MvaveFM1Unbricker) and
 [FM-1 Transporter](https://github.com/kurogedelic/FM-1-transporter) projects,

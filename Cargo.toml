@@ -11,6 +11,8 @@ eframe = { version = "0.36", default-features = false, features = ["glow", "wayl
 rfd = "0.17"
 sha2 = "0.11"
 chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+skrifa = "0.44"
+lyon_tessellation = "1"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 libc = "0.2"
@@ -29,6 +31,7 @@ windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_Securit
 
 [build-dependencies]
 embed-manifest = "1.5"
+winresource = "0.1"
 
 [profile.release]
 opt-level = 3

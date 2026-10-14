@@ -146,7 +146,8 @@ impl eframe::App for App {
         painter.add(Shape::mesh(m));
 
         // ---- masthead ----
-        let ww = p.text(38.0, 82.0, Align2::LEFT_CENTER, "M-FLASHER", "wordmark", 108.0, MINT, 1.0);
+        let origin = board.p(40.0, 116.0);
+        let ww = crate::wordmark::draw(&painter, origin.x, origin.y, 72.0 * s, MINT) / s;
         p.text(38.0 + ww + 24.0, 70.0, Align2::LEFT_CENTER, "USB FIRMWARE UTILITY", "tech", 21.0, LAV, 2.4);
         p.text(38.0 + ww + 24.0, 96.0, Align2::LEFT_CENTER, "FOR THE FM-1 AND SMK-37", "tech", 14.0, hex(0x8f80b6), 3.0);
         p.text(1500.0, 80.0, Align2::RIGHT_CENTER, &format!("v{}", env!("CARGO_PKG_VERSION")), "tech", 14.0, LAV, 1.0);
@@ -743,6 +744,13 @@ fn wrap(text: &str, fits: &dyn Fn(&str) -> bool) -> Vec<String> {
     out
 }
 
+/// The window's icon: macOS's with the margin its icons have, the others' without.
+const ICON: &[u8] = if cfg!(target_os = "macos") {
+    include_bytes!("../assets/icon-256.png")
+} else {
+    include_bytes!("../linux/m-flasher.png")
+};
+
 pub fn run() -> eframe::Result {
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
@@ -750,7 +758,7 @@ pub fn run() -> eframe::Result {
             .with_inner_size(vec2(1280.0, 853.0))
             .with_min_inner_size(vec2(900.0, 600.0))
             // ours (macos/icon.svg), not egui's: the Dock and taskbars show it
-            .with_icon(eframe::icon_data::from_png_bytes(include_bytes!("../assets/icon-256.png")).unwrap_or_default()),
+            .with_icon(eframe::icon_data::from_png_bytes(ICON).unwrap_or_default()),
         ..Default::default()
     };
     eframe::run_native("M-Flasher", options, Box::new(|cc| Ok(Box::new(App::new(cc)))))
@@ -768,7 +776,6 @@ pub fn install_fonts(ctx: &egui::Context) {
         list.extend(fallback.iter().cloned());
         fonts.families.insert(FontFamily::Name(name.into()), list);
     };
-    add("wordmark", include_bytes!("../assets/BarlowCondensed-Bold.ttf"));
     add("cond", include_bytes!("../assets/BarlowCondensed-SemiBold.ttf"));
     add("tech", include_bytes!("../assets/ShareTechMono-Regular.ttf"));
     add("plex", include_bytes!("../assets/IBMPlexMono-Regular.ttf"));
