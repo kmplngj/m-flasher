@@ -116,6 +116,8 @@ pub struct Connection<S: Scsi> {
     read_io: usize,
     /// Our loader's version, if it is the one running.
     own: Option<String>,
+    /// The CPU clock our loader runs the chip at (MHz; 0: it does not say).
+    mhz: u8,
 }
 
 impl<S: Scsi> Connection<S> {
@@ -125,7 +127,7 @@ impl<S: Scsi> Connection<S> {
             return Err(ScsiError::Failed(format!("{path} is \"{vendor} {product}\", not a {VENDOR} {PRODUCT} download-mode device")));
         }
         let mut c = Connection { path: path.into(), dev, chip_key: 0, flash_id: 0, io: 512, read_io: 4096,
-                                 retried: 0, last_retry: String::new(), own: None };
+                                 retried: 0, last_retry: String::new(), own: None, mhz: 0 };
         // What is running already? A loader stays registered until the unit is
         // switched off. (Commands the ROM alone does not know just fail.)
         let ours_running = c.identify();
@@ -165,6 +167,7 @@ impl<S: Scsi> Connection<S> {
         }
         if c.own.is_some() {
             c.read_io = 16384;
+            c.mhz = c.call(IDENTIFY, &[]).map(|r| r[13]).unwrap_or(0);
         }
         let r = c.call(READ_KEY, &0xAC6900u32.to_be_bytes())?;
         c.chip_key = u16::from_le_bytes(crc_cipher(&[r[5], r[4]], 0xFFFF_FFFF).try_into().unwrap());
@@ -255,6 +258,7 @@ impl<S: Scsi> Connection<S> {
 impl<S: Scsi> Flash for Connection<S> {
     fn loader(&self) -> String {
         match &self.own {
+            Some(v) if self.mhz > 0 => format!("M-Flasher {v}, CPU at {} MHz", self.mhz),
             Some(v) => format!("M-Flasher {v}"),
             None => "JieLi".into(),
         }

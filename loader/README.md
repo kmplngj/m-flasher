@@ -1,6 +1,6 @@
 # M-Flasher's flash loader
 
-A small program (3.4 KB) that M-Flasher runs in the chip's RAM from the JieLi
+A small program (3.5 KB) that M-Flasher runs in the chip's RAM from the JieLi
 WL82 (AC791N) mask ROM's USB download mode, instead of JieLi's 30 KB loader.
 
 **How it works.** JieLi's loader is a plug-in for the ROM's own USB
@@ -19,13 +19,33 @@ buffer size. And new ones:
 
 | Command | |
 | --- | --- |
-| FC40 | identify: "MFLR", version, its own address, features |
-| FC41 | CRC32 of a flash range, computed on the chip (1 MiB in 0.8 s): a read is checked without reading it twice, a write without reading it back |
+| FC40 | identify: "MFLR", version, its own address, features, CPU clock |
+| FC41 | CRC32 of a flash range, computed on the chip (1 MiB in 0.4 s): a read is checked without reading it twice, a write without reading it back |
 | FC42 | the flash chip's factory-unique ID (which unit this is) |
 | FC43 / FC44 / FC45 | the unit's own display: on (board), a line of text, a progress bar |
 | FC46 | status: the last refused command |
 
 Not implemented, on purpose: burning the chip-key efuse, chip erase.
+
+**Speed.** The loader raises the CPU from the ROM's 48 MHz to 96 MHz (the
+low-speed bus, which clocks the SPI flash and the display, stays at 48 MHz),
+and reads the flash by DMA while the previous piece goes out over USB. A full
+1 MiB read then takes 1.2 s (860 KB/s; full-speed USB tops out near 1 MB/s),
+a firmware install about 10 s in all.
+
+That is on a good USB controller. Some (seen: AMD's 600-series chipset
+controller, on all of its ports) collect only 3-4 of the unit's 64-byte
+packets per millisecond, against 13-15 on others: about 230 KB/s, a 1 MiB read
+in 4.5 s, whatever the unit does. Measured on one PC:
+
+| Port | Controller | USB | 1 MiB read |
+| --- | --- | --- | --- |
+| case front, motherboard USB 2 and USB-C, Thunderbolt card | AMD chipset | ~230 KB/s | 4.3-4.6 s |
+| motherboard USB 3 | the CPU's own | 870 KB/s (at 48 MHz) - 1 MB/s (96 MHz) | 1.2 s |
+
+(A Thunderbolt card's ports carry USB 1/2 devices over its USB 2 header cable,
+to the chipset.) The unit always has the next packet ready; the time is the
+PC's. M-Flasher logs the read speed and a tip when the port is slow.
 
 **Build.** With JieLi's pi32v2 toolchain: `./build.sh 0x01C20000` (and
 `0x01C28000`: the app carries both, so a new loader is never written over a

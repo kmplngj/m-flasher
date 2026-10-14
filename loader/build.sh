@@ -10,3 +10,5 @@ $T/pi32v2/bin/lto-wrapper -o loader.elf loader.o p33.o display.o -T build.ld --g
 $T/common/bin/objcopy -O binary -j .text loader.elf loader.bin
 $T/common/bin/objdump -d loader.elf > loader.dis
 ls -l loader.bin
+# the ROM jumps to the first byte: that must be loader_entry
+[ "$(grep -m1 -E '^[A-Za-z_][A-Za-z0-9_.]*:$' loader.dis)" = "loader_entry:" ] || { echo "loader_entry is not first" >&2; exit 1; }

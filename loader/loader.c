@@ -26,7 +26,7 @@
 #include "p33.h"
 #include "regs.h"
 
-#define VERSION "0.3"
+#define VERSION "0.4"
 #define BUF_SIZE 4096           /* data per command */
 #define CHUNK 512               /* per send/recv call */
 
@@ -37,9 +37,10 @@ struct rom_io {
 };
 
 static struct rom_io io;
-static u8 buf[BUF_SIZE];
-static u32 last_error;
-static u32 read_chunk = CHUNK;  /* bytes per send() when reading */          /* FC46: what the last refused command was */
+static u8 buf[BUF_SIZE], buf2[BUF_SIZE];
+static u32 last_error;          /* FC46: what the last refused command was */
+static u32 crc_acc;
+static u8 sys_mhz = 48;
 static u32 flash_id;
 
 /* ---- helpers ---- */
@@ -126,7 +127,7 @@ static void cs(int level)
     } else {
         JL_PORTD->OUT &= ~BIT(0);
     }
-    spin(20);
+    spin(40);
 }
 
 static void spi_wait(void)
@@ -172,7 +173,7 @@ static u8 flash_status(u8 cmd)
 static void flash_wait(void)
 {
     while (flash_status(0x05) & 1) {
-        spin(200);
+        spin(400);
     }
 }
 
@@ -205,8 +206,8 @@ static void flash_init(void)
 }
 
 /* Read with the SPI0 DMA (1-bit), the data straight into RAM; the decryptor
- * on the SPI path off. */
-static void flash_read(u32 addr, u8 *p, u32 n)
+ * on the SPI path off. flash_read_start returns while the DMA runs. */
+static void flash_read_start(u32 addr, u8 *p, u32 n)
 {
     flash_cmd_addr(0x03, addr);
     JL_ENC_CON = 2;
@@ -214,9 +215,56 @@ static void flash_read(u32 addr, u8 *p, u32 n)
     JL_SPI0->CON &= ~(BIT(10) | BIT(11));
     JL_SPI0->ADR = (u32)p;
     JL_SPI0->CNT = n;
+}
+
+static void flash_read_end(void)
+{
     spi_wait();
     JL_ENC_CON = 0;
     cs(1);
+}
+
+/* Read n bytes from addr in BUF_SIZE pieces, handing each to use() while the
+ * next one comes in by DMA (USB or the CRC then hide the flash's time). */
+static void flash_stream(u32 addr, u32 n, void (*use)(const u8 *p, u32 k))
+{
+    u8 *cur = buf, *next = buf2;
+    u32 k = n < BUF_SIZE ? n : BUF_SIZE;
+
+    if (k) {
+        flash_read_start(addr, cur, k);
+    }
+    while (n) {
+        flash_read_end();
+        u32 rest = n - k, k2 = rest < BUF_SIZE ? rest : BUF_SIZE;
+        if (k2) {
+            flash_read_start(addr + k, next, k2);
+        }
+        use(cur, k);
+        u8 *t = cur;
+        cur = next;
+        next = t;
+        addr += k;
+        n = rest;
+        k = k2;
+    }
+}
+
+static void send_piece(const u8 *p, u32 k)
+{
+    for (u32 i = 0; i < k; i += CHUNK) {
+        io.send((void *)(p + i), k - i < CHUNK ? k - i : CHUNK);
+    }
+}
+
+static void crc_piece(const u8 *p, u32 k)
+{
+    crc_acc = crc32_update(crc_acc, p, k);
+}
+
+static void crc16_piece(const u8 *p, u32 k)
+{
+    crc_acc = crc16_update(crc_acc, p, k);
 }
 
 /* Clear the block-protect bits (SR1 BP0-BP2, TB, SEC; SR2 CMP), keeping QE. */
@@ -277,7 +325,7 @@ static u16 chip_key(void)
         p33_tx_1byte(P3_EFUSE_CON0, 1 << 6);
         for (u32 j = 0; j < n; j++) {
             p33_tx_1byte(P3_EFUSE_CON1, 3 << 6 | j * 4 | 2);
-            spin(2000);
+            spin(4000);
             tmp |= p33_rx_1byte(P3_EFUSE_RDAT) << (j * 8);
             p33_tx_1byte(P3_EFUSE_CON1, 0);
         }
@@ -332,12 +380,7 @@ static int handler(u8 *cbw, u8 *answer)
         }
         return 1;
     case 0xFD05:                        /* read: addr, len u16 */
-        n = be16(cmd + 6);
-        for (done = 0; done < n; done += k) {
-            k = n - done < read_chunk ? n - done : read_chunk;
-            flash_read(addr + done, buf, k);
-            io.send(buf, k);
-        }
+        flash_stream(addr, be16(cmd + 6), send_piece);
         return 1;
     case 0xFC09: {                      /* chip key, scrambled as JieLi's loader does */
         u16 key = chip_key();
@@ -362,15 +405,10 @@ static int handler(u8 *cbw, u8 *answer)
         send_answer(answer, want);
         return 1;
     case 0xFC0E: {                      /* CRC16 of addr, len u16 */
-        u16 crc = 0;
-        n = be16(cmd + 6);
-        for (done = 0; done < n; done += k) {
-            k = n - done < BUF_SIZE ? n - done : BUF_SIZE;
-            flash_read(addr + done, buf, k);
-            crc = crc16_update(crc, buf, k);
-        }
-        answer[2] = crc >> 8;
-        answer[3] = crc;
+        crc_acc = 0;
+        flash_stream(addr, be16(cmd + 6), crc16_piece);
+        answer[2] = crc_acc >> 8;
+        answer[3] = crc_acc;
         send_answer(answer, want);
         return 1;
     }
@@ -384,21 +422,17 @@ static int handler(u8 *cbw, u8 *answer)
             answer[2 + i] = id[i];
         }
         /* answer: "MFLR" and the version at 2..8, where it runs at 10..13 (the PC
-         * loads a new one elsewhere), features at 14 */
+         * loads a new one elsewhere), features at 14, the CPU clock (MHz) at 15 */
         put_be32(answer + 10, (u32)loader_entry);
         answer[14] = 0x0f;              /* features: CRC32, unique ID, display, status */
+        answer[15] = sys_mhz;
         send_answer(answer, want);
         return 1;
     }
     case 0xFC41: {                      /* CRC32 of addr u32, len u32 */
-        u32 crc = 0xffffffff;
-        n = be32(cmd + 6);
-        for (done = 0; done < n; done += k) {
-            k = n - done < BUF_SIZE ? n - done : BUF_SIZE;
-            flash_read(addr + done, buf, k);
-            crc = crc32_update(crc, buf, k);
-        }
-        put_be32(answer + 2, ~crc);
+        crc_acc = 0xffffffff;
+        flash_stream(addr, be32(cmd + 6), crc_piece);
+        put_be32(answer + 2, ~crc_acc);
         send_answer(answer, want);
         return 1;
     }
@@ -420,13 +454,6 @@ static int handler(u8 *cbw, u8 *answer)
         last_error = 0;
         send_answer(answer, want);
         return 1;
-    case 0xFC4F:                        /* (testing) SPI0 clock divider */
-        JL_SPI0->BAUD = cmd[2];
-        if (cmd[3] >= 1 && cmd[3] <= BUF_SIZE / 256) {
-            read_chunk = cmd[3] * 256;
-        }
-        send_answer(answer, want);
-        return 1;
     case 0xFC42:                        /* factory-unique ID: 4Bh, 4 dummy bytes, 8 bytes */
         cs(0);
         spi_tx(0x4b);
@@ -443,6 +470,22 @@ static int handler(u8 *cbw, u8 *answer)
     return 0;
 }
 
+/* The ROM runs the CPU at 48 MHz (PLL 192 MHz / 4). 96 MHz, with the
+ * low-speed bus divided by 2 so that it (SPI0, SPI1) stays at 48 MHz: the USB
+ * packets go out faster, everything else keeps its timing. Only from the
+ * state the ROM leaves. */
+static void clock_up(void)
+{
+    if ((JL_CLK_CON2 & 0xff) != 0x80 || (JL_SYS_DIV & 0x30700)) {
+        return;
+    }
+    JL_SYS_DIV |= 1 << 8;               /* LSB = HSB / 2 */
+    asm volatile("csync");
+    JL_CLK_CON2 = (JL_CLK_CON2 & ~0xffu) | 0x40;    /* HSB = PLL / 2 */
+    asm volatile("csync");
+    sys_mhz = 96;
+}
+
 __attribute__((section(".entry"), used))
 int loader_entry(struct rom_io *rom)
 {
@@ -452,5 +495,6 @@ int loader_entry(struct rom_io *rom)
     crc32_init();
     flash_init();
     *rom->handler_slot = (void *)handler;
+    clock_up();
     return 0;
 }

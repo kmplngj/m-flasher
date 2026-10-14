@@ -156,7 +156,17 @@ impl<F: Flash> Session<F> {
             log(format!("Note: chip key 0x{:04X} (0x{CHIP_KEY:04X} expected)", dev.chip_key()));
         }
         log("Reading the flash".into());
+        let started = std::time::Instant::now();
         let a = dev.read(0, FLASH_SIZE, &mut |d| progress(d, FLASH_SIZE))?;
+        let rate = FLASH_SIZE as f64 / 1024.0 / started.elapsed().as_secs_f64().max(1e-3);
+        log(format!("Read in {:.1} s ({rate:.0} KB/s)", started.elapsed().as_secs_f64()));
+        if rate < 400.0 {
+            // Some USB controllers (seen: AMD's chipset one) collect only a few of
+            // the unit's 64-byte packets per millisecond; others take 3-4 times more.
+            log("Tip: this USB port is slow for the unit. A port on another USB controller can be \
+                 3-4 times faster, often a rear one next to the video outputs (on the CPU's own controller)."
+                .into());
+        }
         // The read is checked: by the loader's CRC32 of the whole flash, computed
         // on the chip (ours, under a second), or by reading it all again (JieLi's).
         match dev.crc32(0, FLASH_SIZE)? {

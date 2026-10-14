@@ -113,7 +113,7 @@ static u8 lcd_buf[LCD_W * 2];
 
 static void spin_ms(u32 ms)
 {
-    for (u32 n = ms * 40000; n; n--) {
+    for (u32 n = ms * 80000; n; n--) {
         asm volatile("nop");
     }
 }
