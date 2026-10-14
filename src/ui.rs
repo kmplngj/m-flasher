@@ -60,14 +60,20 @@ pub struct App {
     ctl: Controller,
     dialog: Dialog,
     noise: Option<TextureHandle>,
+    /// When an inactive key was last pressed: the LCD's bottom line, which
+    /// says what is needed, flashes for a moment.
+    nudged: f64,
 }
+
+/// How long the LCD's bottom line flashes after an inactive key is pressed (s).
+const NUDGE: f64 = 1.2;
 
 impl App {
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
         install_fonts(&cc.egui_ctx);
         // MFLASHER_DIALOG=about opens the About dialog at start (for screenshots)
         let dialog = if std::env::var("MFLASHER_DIALOG").as_deref() == Ok("about") { Dialog::About } else { Dialog::None };
-        App { ctl: Controller::new(cc.egui_ctx.clone()), dialog, noise: None }
+        App { ctl: Controller::new(cc.egui_ctx.clone()), dialog, noise: None, nudged: f64::NEG_INFINITY }
     }
 }
 
@@ -88,7 +94,7 @@ fn prompt(s: &Shared) -> String {
         (Some(_), Phase::Done) if s.mode == Mode::Backup => format!("BACKUP SAVED · {}", s.backup_saved.clone().unwrap_or_default()),
         (Some(_), Phase::Done) => format!("DONE · {} SECTORS VERIFIED · SWITCH OFF AND ON", s.plan.as_ref().map(|p| p.count).unwrap_or(0)),
         (Some(_), _) => match &s.plan {
-            None => String::new(),
+            None => "CHOOSE AN OPERATION BELOW".into(),
             Some(p) => match p.kind {
                 PlanKind::Refused => format!("REFUSED · {}", p.title.to_uppercase()),
                 PlanKind::Need => p.title.to_uppercase(),
@@ -183,9 +189,22 @@ impl eframe::App for App {
         p.text(372.0, 293.0, Align2::LEFT_CENTER, &l3, "lcd", 30.0, LCDINK, 1.5);
         let line = prompt(&st);
         let alert_ink = st.plan.as_ref().is_some_and(|p| p.kind == PlanKind::Refused);
-        let pw = p.text_fit(84.0, 337.0, &line, "lcd", 29.0, 740.0, if alert_ink { hex(0x5b1206) } else { LCDINK }, 1.4);
-        if (ctx.input(|i| i.time) * 2.0) as i64 % 2 == 0 {
-            p.rect(board.r(84.0 + pw + 8.0, 326.0, 13.0, 22.0), LCDINK);
+        let mut ink = if alert_ink { hex(0x5b1206) } else { LCDINK };
+        // after an inactive key: the line shakes, and flashes inverted three times
+        let now = ctx.input(|i| i.time);
+        let t = now - self.nudged;
+        let mut dx = 0.0;
+        if (0.0..NUDGE).contains(&t) {
+            dx = (t * 45.0).sin() as f32 * 5.0 * (1.0 - t as f32 / 0.45).max(0.0);
+            if ((t / 0.2) as i64) % 2 == 0 {
+                p.rect(board.r(76.0, 323.0, 784.0, 28.0), ink);
+                ink = LCD1;
+            }
+            ctx.request_repaint_after(std::time::Duration::from_millis(16));
+        }
+        let pw = p.text_fit(84.0 + dx, 337.0, &line, "lcd", 29.0, 740.0, ink, 1.4);
+        if (now * 2.0) as i64 % 2 == 0 {
+            p.rect(board.r(84.0 + dx + pw + 8.0, 326.0, 13.0, 22.0), ink);
         }
         ctx.request_repaint_after(std::time::Duration::from_millis(500));
 
@@ -250,6 +269,8 @@ impl eframe::App for App {
             led(&p, board.p(x + kw - 18.0, 542.0), on);
             if c && enabled {
                 self.ctl.select_mode(*mode);
+            } else if c && !modal {
+                self.nudged = now;
             }
         }
 
@@ -416,6 +437,8 @@ impl eframe::App for App {
             } else {
                 self.dialog = Dialog::Review;
             }
+        } else if pc && !modal {
+            self.nudged = now;
         }
 
         // ---- transfer progress ----
