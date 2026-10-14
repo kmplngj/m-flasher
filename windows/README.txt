@@ -10,7 +10,6 @@ Pro / Elite, and install the open bootloader.
 2. Put the unit in download mode and connect it with a USB data cable:
    - with the open bootloader: hold REC (SMK-37: SEQ REC) while switching on;
    - Felucca, SLOOP, Snoop37: hold OCT- and OCT+ for 5 s while it runs.
-   If Windows offers to format a disk, choose Cancel.
 3. Start with "Back up the whole flash". Backups go to
    Documents\M-Flasher\backups.
 

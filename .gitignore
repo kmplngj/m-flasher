@@ -1,7 +1,1 @@
-__pycache__/
-*.pyc
-build/
-dist/
-*.spec
-.venv/
-flasher/ui/demo/
+/target/
