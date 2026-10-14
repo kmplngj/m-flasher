@@ -288,9 +288,7 @@ impl eframe::App for App {
                     ("Felucca, SLOOP, Snoop37 running", "hold OCT- and OCT+ for 5 s"),
                     ("Then", "connect USB: a data cable, no hub"),
                 ];
-                if cfg!(windows) {
-                    rows.push(("Windows offers to format a disk?", "choose Cancel; the unit is found by itself"));
-                } else if cfg!(target_os = "macos") {
+                if cfg!(target_os = "macos") {
                     rows.push(("macOS asks about a removable volume?", "choose Allow: that is the unit"));
                 }
                 for (i, (a, b)) in rows.iter().enumerate() {

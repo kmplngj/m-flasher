@@ -31,9 +31,9 @@ checked.
    - Felucca, SLOOP or Snoop37 running: hold **OCT-** and **OCT+** for 5 s;
    - a unit whose firmware is damaged often ends up there by itself.
 
-   In download mode the screen stays as it was and the computer sees a USB
-   disk called "WL82 UBOOT1.00". **If Windows offers to format a disk, choose
-   Cancel.**
+   In download mode the screen stays as it was. Nothing shows up in Explorer
+   or Finder (Windows' Disk Management lists an empty 0-byte disk, "WL82
+   UBOOT1.00"); M-Flasher finds the unit by itself.
 3. The app finds the unit, reads its whole flash and shows the model, the
    firmware and the bootloader. The unit's own screen shows what is going on.
 4. Choose an action. When you are done, unplug the unit and switch it off and
