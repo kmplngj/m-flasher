@@ -99,9 +99,9 @@ run as root, or install the udev rule once:
 
 ```sh
 sudo cp linux/70-m-flasher.rules /etc/udev/rules.d/ && sudo udevadm control --reload
-python3 -m venv --system-site-packages .venv && .venv/bin/pip install pywebview
-.venv/bin/python -m flasher           # the window (--tk: the simple one)
-.venv/bin/python -m flasher info      # or the command line: find, info, backup, restore, firmware, bootloader
+python3 -m venv --system-site-packages .venv && .venv/bin/pip install -e '.[window]'
+.venv/bin/m-flasher                   # the window (--tk: the simple one), from any folder
+.venv/bin/m-flasher info              # or the command line: find, info, backup, restore, firmware, bootloader
 ```
 
 macOS is not supported (it does not allow the SCSI commands download mode needs).
