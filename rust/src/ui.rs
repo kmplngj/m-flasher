@@ -65,7 +65,9 @@ pub struct App {
 impl App {
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
         install_fonts(&cc.egui_ctx);
-        App { ctl: Controller::new(cc.egui_ctx.clone()), dialog: Dialog::None, noise: None }
+        // MFLASHER_DIALOG=about opens the About dialog at start (for screenshots)
+        let dialog = if std::env::var("MFLASHER_DIALOG").as_deref() == Ok("about") { Dialog::About } else { Dialog::None };
+        App { ctl: Controller::new(cc.egui_ctx.clone()), dialog, noise: None }
     }
 }
 
@@ -238,7 +240,7 @@ impl eframe::App for App {
         for (i, (mode, t1, t2, icon)) in keys.iter().enumerate() {
             let x = 38.0 + i as f32 * (kw + 14.0);
             let r = board.r(x, 524.0, kw, 72.0);
-            let (c, h) = clicked(t2, r);
+            let (c, h) = clicked(&format!("op{i}"), r); // ids must be unique: two keys say FULL FLASH
             let on = dev.is_some() && st.mode == *mode;
             let enabled = dev.is_some() && active;
             key(&p, r, on, h && enabled, !enabled && !on);
@@ -619,11 +621,15 @@ impl App {
                     ("REVIEW", b, vec![("CANCEL", 0), ("WRITE", 2)])
                 }
                 Dialog::About => ("ABOUT", vec![
-                    (format!("M-Flasher {}: backup, restore and reinstall the firmware of the M-VAVE FM-1 and SMK-37 Pro / Elite", env!("CARGO_PKG_VERSION")), INK),
-                    ("through the chip's USB download mode, and install the open bootloader.".into(), INK),
-                    ("Flash loader: JieLi's WL82 USB loader from the AC79 SDK (Apache 2.0). Protocol after jl-uboot-tool".into(), DIM),
-                    ("by kagaimiq (MIT). Open bootloader: fm1-bootloader (Apache 2.0). Fonts: Barlow Condensed,".into(), DIM),
-                    ("Share Tech Mono, IBM Plex Mono, VT323 (OFL). Unofficial: not affiliated with M-VAVE or JieLi.".into(), DIM),
+                    (format!("M-Flasher {}: back up, restore and reinstall the firmware of the M-VAVE FM-1 and SMK-37 \
+                              Pro / Elite through the chip's USB download mode, and install the open bootloader.",
+                             env!("CARGO_PKG_VERSION")), INK),
+                    (String::new(), INK),
+                    ("Flash loader: JieLi's WL82 USB loader from the AC79 SDK (Apache 2.0). Protocol after \
+                      jl-uboot-tool by kagaimiq (MIT). Open bootloader: fm1-bootloader (Apache 2.0). Fonts: Barlow \
+                      Condensed, Share Tech Mono, IBM Plex Mono, VT323 (OFL).".into(), DIM),
+                    (String::new(), INK),
+                    ("Unofficial: not affiliated with M-VAVE or JieLi.".into(), DIM),
                 ], vec![("CLOSE", 0)]),
                 Dialog::Model => {
                     let mut b = vec![
@@ -638,7 +644,9 @@ impl App {
         };
         let screen = painter.clip_rect();
         painter.rect_filled(screen, CornerRadius::ZERO, Color32::from_black_alpha(160));
-        let wrapped: Vec<(String, Color32)> = body.into_iter().flat_map(|(t, c)| wrap(&t, 84).into_iter().map(move |l| (l, c))).collect();
+        // wrapped to the dialog's text width, measured in the font itself
+        let fits = |l: &str| p.measure(l, "tech", 16.5, 0.2) <= 690.0;
+        let wrapped: Vec<(String, Color32)> = body.into_iter().flat_map(|(t, c)| wrap(&t, &fits).into_iter().map(move |l| (l, c))).collect();
         let review = self.dialog == Dialog::Review && st.alert.is_none();
         let h = 150.0 + wrapped.len() as f32 * 27.0 + if review { 66.0 } else { 0.0 };
         let top = (H - h) / 2.0;
@@ -687,11 +695,16 @@ impl App {
     }
 }
 
-fn wrap(text: &str, width: usize) -> Vec<String> {
+/// Lines of text, broken at spaces so that each one fits; an empty text is one
+/// empty line.
+fn wrap(text: &str, fits: &dyn Fn(&str) -> bool) -> Vec<String> {
+    if text.is_empty() {
+        return vec![String::new()];
+    }
     let mut out = vec![];
     let mut line = String::new();
     for word in text.split(' ') {
-        if !line.is_empty() && line.chars().count() + 1 + word.chars().count() > width {
+        if !line.is_empty() && !fits(&format!("{line} {word}")) {
             out.push(std::mem::take(&mut line));
         }
         if !line.is_empty() {
