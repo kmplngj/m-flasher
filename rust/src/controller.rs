@@ -321,6 +321,10 @@ impl Controller {
             };
             let view = device_view(&unit);
             c.log(format!("{} · {} · bootloader {} · flash read twice, identical", view.model, view.firmware, view.bootloader));
+            let (n, last) = unit.dev.retries();
+            if n > 0 {
+                c.log(format!("{n} USB transfers had to be sent again (last: {last}): check the cable and port"));
+            }
             if !view.certain {
                 c.log("The model is not certain: check it under DEVICE INFO before writing".into());
             }
@@ -601,6 +605,11 @@ impl Controller {
             for m in log_lines {
                 c.log(m);
             }
+            c.log_retries();
+            if result.is_err() {
+                c.log("Nothing is lost: the backup is saved. Choose the same operation again to finish it; only what is \
+                       still missing is written.".into());
+            }
             c.refresh_backups();
             result?;
             c.with(|s| {
@@ -618,6 +627,16 @@ impl Controller {
             *c.plan.lock().unwrap() = None;
             Ok(())
         });
+    }
+
+    /// Log how many USB transfers were sent again (they hint at a poor cable or port).
+    fn log_retries(&self) {
+        let r = self.unit.lock().unwrap().as_ref().map(|u| u.dev.retries());
+        if let Some((n, last)) = r {
+            if n > 0 {
+                self.log(format!("{n} USB transfers had to be sent again so far (last: {last}): check the cable and port"));
+            }
+        }
     }
 
     pub fn dismiss(&self) {

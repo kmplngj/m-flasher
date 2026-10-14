@@ -63,6 +63,10 @@ pub trait Flash: Send {
     fn erase(&mut self, addr: usize, n: usize) -> Result<(), ScsiError>;
     /// Program erased flash; progress(bytes done).
     fn program(&mut self, addr: usize, data: &[u8], progress: &mut dyn FnMut(usize)) -> Result<(), ScsiError>;
+    /// Transfers that failed and were sent again so far, and the last failure.
+    fn retries(&self) -> (u32, String) {
+        (0, String::new())
+    }
 }
 
 /// An open download-mode session with the loader running.
@@ -72,6 +76,8 @@ pub struct Connection<S: Scsi> {
     chip_key: u16,
     flash_id: u32,
     io: usize,
+    retried: u32,
+    last_retry: String,
 }
 
 impl<S: Scsi> Connection<S> {
@@ -88,7 +94,7 @@ impl<S: Scsi> Connection<S> {
         }
         let mut args = LOADER_ADDR.to_be_bytes().to_vec();
         args.extend(LOADER_ARG.to_be_bytes());
-        let mut c = Connection { path: path.into(), dev, chip_key: 0, flash_id: 0, io: 512 };
+        let mut c = Connection { path: path.into(), dev, chip_key: 0, flash_id: 0, io: 512, retried: 0, last_retry: String::new() };
         c.call(JUMP, &args)?;
         std::thread::sleep(std::time::Duration::from_millis(100));
         let r = c.call(READ_KEY, &0xAC6900u32.to_be_bytes())?;
@@ -101,10 +107,38 @@ impl<S: Scsi> Connection<S> {
         Ok(c)
     }
 
+    /// A flash command, tried up to RETRIES times: a failed transfer (Windows
+    /// reports USB hiccups as error 31) is sent again after a pause. Reading,
+    /// erasing and programming the same data again are all harmless.
+    fn retry(&mut self, what: &str, mut f: impl FnMut(&mut S) -> Result<(), ScsiError>) -> Result<(), ScsiError> {
+        const RETRIES: u32 = 4;
+        let mut attempt = 1;
+        loop {
+            match f(&mut self.dev) {
+                Ok(()) => return Ok(()),
+                Err(ScsiError::Failed(e)) if attempt < RETRIES => {
+                    self.retried += 1;
+                    self.last_retry = format!("{what}: {e}");
+                    std::thread::sleep(std::time::Duration::from_millis(250 * attempt as u64));
+                    attempt += 1;
+                }
+                Err(ScsiError::Failed(e)) => {
+                    return Err(ScsiError::Failed(format!("{what}: {e} (tried {RETRIES} times)")));
+                }
+                Err(e) => return Err(e),
+            }
+        }
+    }
+
     /// A command without data; returns the 14 answer bytes.
     fn call(&mut self, cmd: u16, args: &[u8]) -> Result<[u8; 14], ScsiError> {
         let mut resp = [0u8; 16];
-        self.dev.execute(&cdb(cmd, args), Data::In(&mut resp))?;
+        let c = cdb(cmd, args);
+        let what = match cmd {
+            ERASE_BLOCK | ERASE_SECTOR => format!("erasing 0x{:05X}", u32::from_be_bytes([args[0], args[1], args[2], args[3]])),
+            _ => format!("command 0x{cmd:04x}"),
+        };
+        self.retry(&what, |d| d.execute(&c, Data::In(&mut resp)))?;
         if u16::from_be_bytes([resp[0], resp[1]]) != cmd {
             return Err(ScsiError::Failed(format!("unexpected answer to command 0x{cmd:04x}")));
         }
@@ -122,6 +156,9 @@ impl<S: Scsi> Connection<S> {
 }
 
 impl<S: Scsi> Flash for Connection<S> {
+    fn retries(&self) -> (u32, String) {
+        (self.retried, self.last_retry.clone())
+    }
     fn path(&self) -> &str {
         &self.path
     }
@@ -139,7 +176,9 @@ impl<S: Scsi> Flash for Connection<S> {
             let k = self.io.min(n - done);
             let mut args = ((addr + done) as u32).to_be_bytes().to_vec();
             args.extend((k as u16).to_be_bytes());
-            self.dev.execute(&cdb(READ_FLASH, &args), Data::In(&mut out[done..done + k]))?;
+            let c = cdb(READ_FLASH, &args);
+            let buf = &mut out[done..done + k];
+            self.retry(&format!("reading 0x{:05X}", addr + done), |d| d.execute(&c, Data::In(buf)))?;
             done += k;
             progress(done);
         }
@@ -164,7 +203,8 @@ impl<S: Scsi> Flash for Connection<S> {
         for (i, chunk) in data.chunks(self.io).enumerate() {
             if chunk.iter().any(|&b| b != 0xFF) {
                 let a = (addr + i * self.io) as u32;
-                self.dev.execute(&cdb(WRITE_FLASH, &addr_len_crc(a, chunk)), Data::Out(chunk))?;
+                let c = cdb(WRITE_FLASH, &addr_len_crc(a, chunk));
+                self.retry(&format!("writing 0x{a:05X}"), |d| d.execute(&c, Data::Out(chunk)))?;
             }
             progress(i * self.io + chunk.len());
         }
