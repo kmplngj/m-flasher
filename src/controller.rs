@@ -669,11 +669,18 @@ impl Controller {
 
     pub fn open_backups(&self) {
         let dir = self.shared.lock().unwrap().backup_dir.clone();
-        let _ = std::fs::create_dir_all(&dir);
-        #[cfg(windows)]
-        let _ = std::process::Command::new("explorer").arg(&dir).spawn();
-        #[cfg(not(windows))]
-        let _ = std::process::Command::new("xdg-open").arg(&dir).spawn();
+        let _ = crate::ops::create_dirs(&dir);
+        let opener = if cfg!(windows) { "explorer" } else if cfg!(target_os = "macos") { "open" } else { "xdg-open" };
+        let mut cmd = match std::env::var("SUDO_USER") {
+            // run with sudo: the file manager opens as the user, not as root
+            Ok(user) if !cfg!(windows) => {
+                let mut c = std::process::Command::new("sudo");
+                c.args(["-u", &user, opener]);
+                c
+            }
+            _ => std::process::Command::new(opener),
+        };
+        let _ = cmd.arg(&dir).spawn();
     }
 
     fn refresh_backups(&self) {

@@ -2,7 +2,8 @@
 //! SCSI commands through to a USB disk (macOS): the app takes the interface
 //! from the system's mass-storage driver and speaks USB mass-storage
 //! Bulk-Only Transport itself. macOS lets only root take a device from its
-//! driver; it gets it back when the app lets go.
+//! driver, and asks the user to allow it (so the app must be started from a
+//! logged-in session, e.g. Terminal, not over SSH).
 
 use super::{Data, ScsiError, cmd_name};
 use rusb::{Direction, GlobalContext, TransferType};
@@ -20,6 +21,8 @@ pub struct Device {
     ep_in: u8,
     ep_out: u8,
     tag: u32,
+    /// The system's driver was detached from the interface.
+    detached: bool,
 }
 
 fn failed(what: &str, e: rusb::Error) -> ScsiError {
@@ -65,12 +68,31 @@ impl Device {
             rusb::Error::Access => needs_root(e),
             e => failed("cannot open the unit", e),
         })?;
-        let _ = handle.set_auto_detach_kernel_driver(true);
-        handle.claim_interface(iface).map_err(|e| match e {
+        // the system's disk driver lets go of the interface (on macOS: of
+        // the whole device, which needs root), and gets it back on drop
+        // (libusb on macOS says no driver is attached when the disk driver
+        // is: detach there regardless)
+        let detached = cfg!(target_os = "macos") || handle.kernel_driver_active(iface).unwrap_or(false);
+        if detached {
+            handle.detach_kernel_driver(iface).map_err(|e| match e {
+                rusb::Error::Access => needs_root(e),
+                e => failed("cannot take the unit from the system's USB disk driver", e),
+            })?;
+        }
+        // after a capture macOS takes a moment to offer the interface again
+        let mut claimed = handle.claim_interface(iface);
+        for _ in 0..20 {
+            if !matches!(claimed, Err(rusb::Error::Other | rusb::Error::Busy)) {
+                break;
+            }
+            std::thread::sleep(Duration::from_millis(100));
+            claimed = handle.claim_interface(iface);
+        }
+        claimed.map_err(|e| match e {
             rusb::Error::Access | rusb::Error::Busy => needs_root(e),
             e => failed("cannot take the unit's USB interface", e),
         })?;
-        Ok(Device { handle, iface, ep_in, ep_out, tag: 0 })
+        Ok(Device { handle, iface, ep_in, ep_out, tag: 0, detached })
     }
 
     /// Bulk-Only Mass Storage Reset, then clear both endpoints' halts.
@@ -113,9 +135,13 @@ impl Device {
         cbw[15..15 + cdb.len()].copy_from_slice(cdb);
         let name = cmd_name(cdb);
         self.handle.write_bulk(self.ep_out, &cbw, TIMEOUT).map_err(|e| failed(&format!("sending command {name}"), e))?;
-        // libusb ends a read at a short packet: the device may send less
+        // libusb ends a read at a short packet: the device may send less.
+        // No data, no data phase (an empty write would send a zero-length
+        // packet, which the device takes for the next command).
         let phase = match data {
             Data::None => Ok(()),
+            Data::In(b) if b.is_empty() => Ok(()),
+            Data::Out(b) if b.is_empty() => Ok(()),
             Data::In(buf) => match self.handle.read_bulk(self.ep_in, buf, TIMEOUT) {
                 Ok(_) => Ok(()),
                 Err(rusb::Error::Pipe) => Err(self.ep_in),
@@ -160,8 +186,13 @@ impl super::Scsi for Device {
 
 impl Drop for Device {
     fn drop(&mut self) {
-        // the system's driver gets the interface back (auto-detach re-attaches it)
         let _ = self.handle.release_interface(self.iface);
+        // Linux: the disk driver gets the interface back. macOS would re-enumerate
+        // the device for that, which makes the chip leave download mode: there it
+        // stays without a driver until it is unplugged.
+        if self.detached && !cfg!(target_os = "macos") {
+            let _ = self.handle.attach_kernel_driver(self.iface);
+        }
     }
 }
 

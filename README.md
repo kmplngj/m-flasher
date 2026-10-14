@@ -96,7 +96,8 @@ Tested on an SMK-37 Pro from Linux: identification (stock, Baud Girl,
 Snoop37), backups (identical to jl-uboot-tool's reads), installing the open
 bootloader, installing the stock firmware over Baud Girl and over Snoop37,
 restoring a backup (the flash afterwards identical to it); on Windows with the
-same unit. Not yet tried: an FM-1.
+same unit; on macOS (an M3 Mac) the window and the command line, installing
+firmware and restoring. Not yet tried: an FM-1.
 
 ## Linux
 
@@ -110,7 +111,23 @@ sudo cp m-flasher/70-m-flasher.rules /etc/udev/rules.d/ && sudo udevadm control 
 m-flasher/m-flasher
 ```
 
-macOS is not supported yet.
+## macOS
+
+Download `m-flasher-…-macos.zip` from the [releases](../../releases) (one
+binary for Apple silicon and Intel) and extract it. macOS does not pass the
+download mode's SCSI commands through, so M-Flasher takes the unit from the
+system's disk driver and talks USB mass storage itself (libusb). Only root may
+do that, and macOS asks once to allow access to the USB device, so start it
+with sudo from Terminal (not over SSH):
+
+```sh
+cd m-flasher && xattr -d com.apple.quarantine m-flasher   # once: it is not signed
+sudo ./m-flasher            # the window; or sudo ./m-flasher info, backup, ...
+```
+
+Start it soon after connecting the unit: left with macOS's disk driver, the
+unit may leave download mode after about half a minute. Backups go to
+`~/Documents/M-Flasher/backups` and belong to you, not root.
 
 ## Command line
 
@@ -145,6 +162,7 @@ open bootloader builds and the fonts are all inside it.
 | `src/boards.rs` | the models and how a flash image identifies them |
 | `src/sectormap.rs` | the flash map: a region for each of the 256 sectors |
 | `src/scsi.rs` | SCSI pass-through: Linux SG_IO, Windows SCSI_PASS_THROUGH_DIRECT |
+| `src/usb.rs` | macOS: USB mass-storage Bulk-Only Transport through libusb (on Linux with `--features usb`) |
 | `src/jl.rs` | the download-mode protocol and starting a loader |
 | `src/ops.rs` | the operations and their safety rules |
 | `src/controller.rs` | the window's logic in background threads |
@@ -156,7 +174,7 @@ cargo build --release          # target/release/m-flasher
 cargo test --release           # FLASHER_TEST_DATA=DIR adds the tests with real flash images
 ```
 
-GitHub Actions builds the Linux and Windows packages
+GitHub Actions builds the Linux, Windows and macOS packages
 (`.github/workflows/build.yml`), and publishes them for a `v*` tag.
 
 ## Credits and licenses

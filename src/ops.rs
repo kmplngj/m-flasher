@@ -236,10 +236,7 @@ impl<F: Flash> Session<F> {
 
     pub fn save_backup(&mut self, dir: Option<&Path>) -> Result<PathBuf, Error> {
         let dir = dir.map(Path::to_path_buf).unwrap_or_else(|| self.backup_dir.clone());
-        let new_dirs: Vec<PathBuf> = dir.ancestors().take_while(|d| !d.as_os_str().is_empty() && !d.exists())
-            .map(Path::to_path_buf).collect();
-        std::fs::create_dir_all(&dir).map_err(|e| Error::Io(format!("cannot create {}: {e}", dir.display())))?;
-        new_dirs.iter().for_each(|d| give_to_sudo_user(d));
+        create_dirs(&dir).map_err(|e| Error::Io(format!("cannot create {}: {e}", dir.display())))?;
         let stamp = chrono::Local::now().format("%Y%m%d-%H%M%S").to_string();
         let model = self.board().map(|b| b.key).unwrap_or("unknown");
         let path = dir.join(format!("{model}-{stamp}.bin"));
@@ -484,6 +481,15 @@ pub fn backup_unit_id(backup: &Path) -> Option<String> {
     let json = std::fs::read_to_string(backup.with_extension("json")).ok()?;
     let id = json.split("\"unit id\": \"").nth(1)?.split('"').next()?;
     (id.len() == 16 && id.chars().all(|c| c.is_ascii_hexdigit())).then(|| id.to_string())
+}
+
+/// create_dir_all, the new folders given to the user who ran sudo.
+pub fn create_dirs(dir: &Path) -> std::io::Result<()> {
+    let new: Vec<PathBuf> = dir.ancestors().take_while(|d| !d.as_os_str().is_empty() && !d.exists())
+        .map(Path::to_path_buf).collect();
+    std::fs::create_dir_all(dir)?;
+    new.iter().for_each(|d| give_to_sudo_user(d));
+    Ok(())
 }
 
 /// Run with sudo (macOS needs it), the files the app creates still belong to
