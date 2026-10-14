@@ -260,11 +260,16 @@ class Session:
 
     # -- writing --
 
-    def apply(self, plan):
+    def apply(self, plan, event=None):
+        """Write a plan. event(stage, addr), if given, follows the work:
+        'backup' (addr None), 'erase' (start of a run), 'write' and 'verify'
+        (the address done up to)."""
+        ev = event or (lambda stage, addr=None: None)
         if not plan.sectors:
             self.log('Nothing to write')
             return
         if not self.backup_path:
+            ev('backup')
             self.save_backup()
         total, done = len(plan.sectors) * SECTOR, 0
         current = bytearray(self.flash)
@@ -272,9 +277,10 @@ class Session:
             want = plan.target[a:b]
             for attempt in (1, 2):
                 self.log(f'Writing 0x{a:05X}-0x{b - 1:05X}' + (' (again)' if attempt == 2 else ''))
+                ev('erase', a)
                 self.conn.erase(a, b - a)
-                self.conn.program(a, want)
-                got = self.conn.read(a, b - a)
+                self.conn.program(a, want, lambda n, a=a: ev('write', a + n))
+                got = self.conn.read(a, b - a, lambda n, t, a=a: ev('verify', a + n))
                 if got == want:
                     break
                 if attempt == 2:

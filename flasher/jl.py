@@ -162,9 +162,12 @@ class Connection:
                 self.p.erase_sector(addr)
                 addr += 0x1000
 
-    def program(self, addr, data):
-        """Program erased flash; skips chunks that are all 0xFF."""
+    def program(self, addr, data, progress=None):
+        """Program erased flash; skips chunks that are all 0xFF. progress(n):
+        n bytes done."""
         for o in range(0, len(data), self.io):
             chunk = data[o:o + self.io]
             if chunk.count(0xFF) != len(chunk):
                 self.p.write(addr + o, chunk)
+            if progress:
+                progress(o + len(chunk))

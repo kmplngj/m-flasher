@@ -27,11 +27,12 @@ jobs:
         with:
           python-version: '3.12'
       - run: python -m unittest -v
-      - run: pip install pyinstaller==6.11.1
+      - run: pip install pyinstaller==6.11.1 pywebview==6.2.1
       - name: Build M-Flasher.exe
         run: >
           pyinstaller --onefile --windowed --uac-admin --name M-Flasher
-          --add-data "flasher/data;flasher/data" run.py
+          --add-data "flasher/data;flasher/data" --add-data "flasher/ui;flasher/ui"
+          --collect-all webview --hidden-import clr run.py
       - name: Zip it
         # A zip: browsers warn about downloading a bare unsigned .exe.
         shell: pwsh

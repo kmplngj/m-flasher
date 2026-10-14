@@ -45,7 +45,7 @@ class FakeConn:
         self.erased.append((addr, n))
         self.mem[addr:addr + n] = b'\xff' * n
 
-    def program(self, addr, data):
+    def program(self, addr, data, progress=None):
         self.programmed.append((addr, len(data)))
         data = bytearray(data)
         if self.fail_writes:

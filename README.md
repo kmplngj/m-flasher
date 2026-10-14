@@ -9,6 +9,14 @@ on the unit is broken.
 > Unofficial. Not affiliated with M-VAVE or JieLi. Every write is checked, and
 > the tool saves a backup before it writes anything, but use it at your own risk.
 
+![M-Flasher reviewing a firmware install: the flash map marks the 153 sectors it will write](docs/screenshot.jpg)
+
+The **flash map** shows the unit's 1 MiB flash as its 256 sectors of 4 KiB,
+coloured by what they hold (bootloader, firmware, settings, pairings,
+calibration, presets, sounds). Before a write it marks exactly the sectors
+that will change; while writing they light up as they are written and read
+back.
+
 ## Windows: getting started
 
 1. Download `M-Flasher-…-windows.zip` from the [releases](../../releases),
@@ -83,13 +91,17 @@ unit. Not yet tried: an FM-1.
 
 ## Linux
 
-Needs Python 3.9+ with Tk (`python3-tk` on Debian/Ubuntu) and the SCSI generic
-driver (`sudo modprobe sg`). Either run as root, or install the udev rule once:
+Needs Python 3.9+ and the SCSI generic driver (`sudo modprobe sg`). The
+window uses [pywebview](https://pywebview.flowrl.com/) with the system's
+WebKitGTK (Debian/Ubuntu: `python3-gi gir1.2-webkit2-4.1`; Arch: `python-gobject
+webkit2gtk-4.1`); without it a simpler Tk window opens (`python3-tk`). Either
+run as root, or install the udev rule once:
 
 ```sh
 sudo cp linux/70-m-flasher.rules /etc/udev/rules.d/ && sudo udevadm control --reload
-python3 -m flasher            # the window
-python3 -m flasher info       # or the command line: find, info, backup, restore, firmware, bootloader
+python3 -m venv --system-site-packages .venv && .venv/bin/pip install pywebview
+.venv/bin/python -m flasher           # the window (--tk: the simple one)
+.venv/bin/python -m flasher info      # or the command line: find, info, backup, restore, firmware, bootloader
 ```
 
 macOS is not supported (it does not allow the SCSI commands download mode needs).
@@ -115,15 +127,20 @@ loader reads, erases and writes the SPI flash. The protocol follows
 [jl-uboot-tool](https://github.com/kagaimiq/jl-uboot-tool) by kagaimiq. Flash
 layout and package format: `flasher/formats.py`.
 
+The window is HTML/CSS/JS (`flasher/ui/`) in a webview, Edge WebView2 on
+Windows; `flasher/controller.py` runs everything behind it and
+`flasher/webui.py` connects the two.
+
 Development: `python -m unittest` runs the tests against a simulated unit;
 the tests with real flash images need `FLASHER_TEST_DATA` (see
-`tests/test_ops.py`). The Windows build is made by GitHub Actions
+`tests/test_ops.py`). `tools/ui_demo.py` saves the window's states for
+previewing `flasher/ui/index.html?demo=NAME` in a browser. The Windows build is made by GitHub Actions
 (`.github/workflows/build.yml`) with PyInstaller.
 
 ## Credits and licenses
 
 MIT, see [LICENSE](LICENSE). Bundled: JieLi's WL82 USB loader (from
-jl-uboot-tool) and the open bootloader builds (Apache 2.0), see
+jl-uboot-tool), the open bootloader builds (Apache 2.0) and the window's fonts (OFL), see
 [flasher/data/NOTICE.md](flasher/data/NOTICE.md). Thanks to kagaimiq for
 jl-uboot-tool, and to the
 [MvaveFM1Unbricker](https://github.com/Quixotic7/MvaveFM1Unbricker) and
