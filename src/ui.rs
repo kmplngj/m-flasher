@@ -725,7 +725,9 @@ pub fn run() -> eframe::Result {
         viewport: egui::ViewportBuilder::default()
             .with_title("M-Flasher")
             .with_inner_size(vec2(1280.0, 853.0))
-            .with_min_inner_size(vec2(900.0, 600.0)),
+            .with_min_inner_size(vec2(900.0, 600.0))
+            // ours (macos/icon.svg), not egui's: the Dock and taskbars show it
+            .with_icon(eframe::icon_data::from_png_bytes(include_bytes!("../assets/icon-256.png")).unwrap_or_default()),
         ..Default::default()
     };
     eframe::run_native("M-Flasher", options, Box::new(|cc| Ok(Box::new(App::new(cc)))))

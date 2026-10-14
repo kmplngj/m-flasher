@@ -2,15 +2,15 @@
 //! SCSI commands through to a USB disk (macOS): the app takes the interface
 //! from the system's mass-storage driver and speaks USB mass-storage
 //! Bulk-Only Transport itself. macOS lets only root take a device from its
-//! driver, and asks the user to allow it (so the app must be started from a
-//! logged-in session, e.g. Terminal, not over SSH).
+//! driver (the app runs this in a root helper, see macos.rs), and asks the
+//! user to allow it, which it cannot do over SSH.
 
 use super::{Data, ScsiError, cmd_name};
 use rusb::{Direction, GlobalContext, TransferType};
 use std::time::Duration;
 
-const VID: u16 = 0x4C4A;
-const PID: u16 = 0x8057;
+pub const VID: u16 = 0x4C4A;
+pub const PID: u16 = 0x8057;
 const TIMEOUT: Duration = Duration::from_secs(10);
 const CBW_SIGNATURE: u32 = 0x4342_5355; // "USBC"
 const CSW_SIGNATURE: u32 = 0x5342_5355; // "USBS"

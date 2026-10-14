@@ -333,7 +333,14 @@ mod imp {
 
 #[cfg(any(target_os = "macos", all(target_os = "linux", feature = "usb")))]
 #[path = "usb.rs"]
-mod imp;
+mod usb;
+#[cfg(all(target_os = "linux", feature = "usb"))]
+use usb as imp;
+#[cfg(target_os = "macos")]
+#[path = "macos.rs"]
+pub mod macos;
+#[cfg(target_os = "macos")]
+use macos as imp;
 
 // ---------------------------------------------------------------- other ---
 

@@ -120,16 +120,18 @@ is not signed with an Apple certificate, so the first time macOS blocks it:
 
 macOS does not pass the download mode's SCSI commands through, so M-Flasher
 takes the unit from the system's disk driver and talks USB mass storage
-itself (libusb). Only root may take a device from its driver, so the window
-runs as root: the app asks for your password in the system's dialog and starts
-again (`AuthorizationExecuteWithPrivileges`, so that the root window still
-counts as M-Flasher's, see `src/macos.rs`). macOS asks once to let M-Flasher
-access files on a removable volume (the unit): choose **Allow**. Start it soon after connecting
+itself (libusb). Only root may take a device from its driver: when the app
+finds the unit it asks for your password in the system's dialog and starts a
+small root helper that does the USB transfers for it (see `src/macos.rs`); the
+window stays a normal app. macOS asks once to let M-Flasher access files on a
+removable volume (the unit): choose **Allow**. Start it soon after connecting
 the unit: left with macOS's disk driver, the unit may leave download mode
-after about half a minute. Backups go to `~/Documents/M-Flasher/backups` and
-belong to you, not root. The command line is inside the app:
-`sudo /Applications/M-Flasher.app/Contents/MacOS/M-Flasher info`, from
-Terminal (not over SSH: macOS can ask about the volume only on the screen).
+after about half a minute. Backups go to `~/Documents/M-Flasher/backups`.
+
+The command line is inside the app:
+`/Applications/M-Flasher.app/Contents/MacOS/M-Flasher info` (or `backup`,
+...), from Terminal; it asks for the password the same way, or run it with
+sudo. Not over SSH: macOS can ask about the volume only on the screen.
 
 `macos/package.sh` makes the app and the disk image; `macos/render.sh`
 renders the icon and the disk image's background from their SVGs.
@@ -168,6 +170,7 @@ open bootloader builds and the fonts are all inside it.
 | `src/sectormap.rs` | the flash map: a region for each of the 256 sectors |
 | `src/scsi.rs` | SCSI pass-through: Linux SG_IO, Windows SCSI_PASS_THROUGH_DIRECT |
 | `src/usb.rs` | macOS: USB mass-storage Bulk-Only Transport through libusb (on Linux with `--features usb`) |
+| `src/macos.rs` | macOS: the root helper that reaches the unit, started through the system's password dialog |
 | `src/jl.rs` | the download-mode protocol and starting a loader |
 | `src/ops.rs` | the operations and their safety rules |
 | `src/controller.rs` | the window's logic in background threads |
