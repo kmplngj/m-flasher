@@ -3,13 +3,15 @@
 //!
 //! Linux: the SCSI generic driver (/dev/sgN, SG_IO). Windows:
 //! \\.\PhysicalDriveN with IOCTL_SCSI_PASS_THROUGH_DIRECT, which needs
-//! administrator rights. Ported from jl-uboot-tool's scsiio (MIT, (c) 2023
+//! administrator rights. macOS (and Linux built with the `usb` feature): USB
+//! Bulk-Only Transport through libusb, see usb.rs. Ported from jl-uboot-tool's scsiio (MIT, (c) 2023
 //! Andrey Grigoryev).
 
 use std::fmt;
 
 pub const VENDOR: &str = "WL82";
 pub const PRODUCT: &str = "UBOOT1.00";
+#[cfg(any(windows, all(target_os = "linux", not(feature = "usb"))))]
 const TIMEOUT_S: u32 = 10;
 
 #[derive(Debug, Clone)]
@@ -51,7 +53,7 @@ fn cmd_name(cdb: &[u8]) -> String {
 
 // ---------------------------------------------------------------- Linux ---
 
-#[cfg(target_os = "linux")]
+#[cfg(all(target_os = "linux", not(feature = "usb")))]
 mod imp {
     use super::*;
     use std::fs::{File, OpenOptions};
@@ -327,9 +329,15 @@ mod imp {
     }
 }
 
+// --------------------------------------------------- macOS: USB directly ---
+
+#[cfg(any(target_os = "macos", all(target_os = "linux", feature = "usb")))]
+#[path = "usb.rs"]
+mod imp;
+
 // ---------------------------------------------------------------- other ---
 
-#[cfg(not(any(target_os = "linux", windows)))]
+#[cfg(not(any(target_os = "linux", windows, target_os = "macos")))]
 mod imp {
     use super::*;
 
@@ -337,7 +345,7 @@ mod imp {
 
     impl Device {
         pub fn open(_path: &str) -> Result<Device, ScsiError> {
-            Err(ScsiError::Failed("this system is not supported yet: use Windows or Linux".into()))
+            Err(ScsiError::Failed("this system is not supported: use Windows, Linux or macOS".into()))
         }
     }
 

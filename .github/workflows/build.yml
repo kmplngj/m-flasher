@@ -2,7 +2,7 @@ name: build
 
 on:
   push:
-    branches: [main, rust]
+    branches: ['**']
     tags: ['v*']
   pull_request:
 
@@ -45,9 +45,33 @@ jobs:
           name: M-Flasher-windows
           path: M-Flasher-windows.zip
 
+  macos:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v7
+      - run: rustup target add x86_64-apple-darwin
+      - run: cargo test --release
+      - name: Build for Apple silicon and Intel
+        run: |
+          cargo build --release --target aarch64-apple-darwin
+          cargo build --release --target x86_64-apple-darwin
+          lipo -create -output m-flasher target/aarch64-apple-darwin/release/m-flasher target/x86_64-apple-darwin/release/m-flasher
+          lipo -info m-flasher
+          otool -L m-flasher
+      - name: Package
+        run: |
+          mkdir -p pkg/m-flasher
+          cp m-flasher macos/README.txt LICENSE pkg/m-flasher/
+          (cd pkg && zip -r ../m-flasher-macos.zip m-flasher)
+          ls -l m-flasher m-flasher-macos.zip
+      - uses: actions/upload-artifact@v7
+        with:
+          name: m-flasher-macos
+          path: m-flasher-macos.zip
+
   release:
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [linux, windows]
+    needs: [linux, windows, macos]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -60,8 +84,10 @@ jobs:
           v=${GITHUB_REF_NAME#v}
           mv M-Flasher-windows.zip M-Flasher-$v-windows.zip
           mv m-flasher-linux-x86_64.tar.gz m-flasher-$v-linux-x86_64.tar.gz
+          mv m-flasher-macos.zip m-flasher-$v-macos.zip
       - uses: softprops/action-gh-release@v3
         with:
           files: |
             M-Flasher-*-windows.zip
             m-flasher-*-linux-x86_64.tar.gz
+            m-flasher-*-macos.zip

@@ -20,7 +20,13 @@ const USAGE: &str = "usage: m-flasher [find | info | backup [DIR] | restore BACK
        without arguments: the window";
 
 pub fn default_backup_dir() -> PathBuf {
-    let home = std::env::var_os("USERPROFILE").or_else(|| std::env::var_os("HOME")).map(PathBuf::from).unwrap_or_default();
+    let mut home = std::env::var_os("USERPROFILE").or_else(|| std::env::var_os("HOME")).map(PathBuf::from).unwrap_or_default();
+    if let Ok(user) = std::env::var("SUDO_USER") {
+        // under sudo the backups still go to the user's own Documents
+        if cfg!(target_os = "macos") && home == std::path::Path::new("/var/root") {
+            home = PathBuf::from("/Users").join(user);
+        }
+    }
     let docs = home.join("Documents");
     (if docs.is_dir() { docs } else { home }).join("M-Flasher").join("backups")
 }

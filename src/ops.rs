@@ -236,7 +236,10 @@ impl<F: Flash> Session<F> {
 
     pub fn save_backup(&mut self, dir: Option<&Path>) -> Result<PathBuf, Error> {
         let dir = dir.map(Path::to_path_buf).unwrap_or_else(|| self.backup_dir.clone());
+        let new_dirs: Vec<PathBuf> = dir.ancestors().take_while(|d| !d.as_os_str().is_empty() && !d.exists())
+            .map(Path::to_path_buf).collect();
         std::fs::create_dir_all(&dir).map_err(|e| Error::Io(format!("cannot create {}: {e}", dir.display())))?;
+        new_dirs.iter().for_each(|d| give_to_sudo_user(d));
         let stamp = chrono::Local::now().format("%Y%m%d-%H%M%S").to_string();
         let model = self.board().map(|b| b.key).unwrap_or("unknown");
         let path = dir.join(format!("{model}-{stamp}.bin"));
@@ -249,6 +252,8 @@ impl<F: Flash> Session<F> {
         json += &format!("  \"sha256\": \"{sha}\",\n");
         json += &format!("  \"saved\": \"{stamp}\",\n  \"tool\": \"m-flasher {}\"\n}}\n", env!("CARGO_PKG_VERSION"));
         std::fs::write(path.with_extension("json"), json).map_err(|e| Error::Io(e.to_string()))?;
+        give_to_sudo_user(&path);
+        give_to_sudo_user(&path.with_extension("json"));
         self.backup_path = Some(path.clone());
         Ok(path)
     }
@@ -479,6 +484,18 @@ pub fn backup_unit_id(backup: &Path) -> Option<String> {
     let json = std::fs::read_to_string(backup.with_extension("json")).ok()?;
     let id = json.split("\"unit id\": \"").nth(1)?.split('"').next()?;
     (id.len() == 16 && id.chars().all(|c| c.is_ascii_hexdigit())).then(|| id.to_string())
+}
+
+/// Run with sudo (macOS needs it), the files the app creates still belong to
+/// the user who ran it.
+fn give_to_sudo_user(_path: &Path) {
+    #[cfg(unix)]
+    {
+        let id = |v| std::env::var(v).ok().and_then(|s| s.parse::<u32>().ok());
+        if let (Some(uid), Some(gid)) = (id("SUDO_UID"), id("SUDO_GID")) {
+            let _ = std::os::unix::fs::chown(_path, Some(uid), Some(gid));
+        }
+    }
 }
 
 /// The model by its key (for the command line's --board).

@@ -14,6 +14,14 @@ chrono = { version = "0.4", default-features = false, features = ["clock", "std"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 libc = "0.2"
+rusb = { version = "0.9", features = ["vendored"], optional = true }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+rusb = { version = "0.9", features = ["vendored"] }
+
+[features]
+# Linux: talk to the unit through libusb (as on macOS) instead of SCSI generic
+usb = ["dep:rusb"]
 
 [target.'cfg(windows)'.dependencies]
 windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_Security", "Win32_Storage_FileSystem", "Win32_System_IO", "Win32_System_Ioctl", "Win32_Storage_IscsiDisc", "Win32_System_Console", "Win32_UI_Shell"] }
