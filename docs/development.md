@@ -43,6 +43,7 @@ loaders, the open bootloader builds and the fonts are all inside it.
 | `data/` | the bundled loaders and bootloader builds ([NOTICE](../data/NOTICE.md)) |
 | `assets/` | fonts and the window icon ([README](../assets/README.md)) |
 | `linux/`, `windows/`, `macos/` | each system's package: icons, instructions, the udev rule, the disk image |
+| `linux/package/` | the `.deb` and `.rpm`: nFPM's configuration, the launcher, AppStream metadata, the man page |
 
 ## Building
 
@@ -53,7 +54,10 @@ cargo test --release           # FLASHER_TEST_DATA=DIR adds the tests with real 
 
 GitHub Actions (`.github/workflows/build.yml`) builds and tests the Linux,
 Windows and macOS packages for every push, and publishes them as a release
-for a `v*` tag. On a Mac, `macos/package.sh` makes the app and the disk image,
+for a `v*` tag; the `.deb` and `.rpm` are installed and run in clean
+containers of the distributions they are for (`linux/package/test-install.sh`).
+`linux/package/build.sh` makes them with [nFPM](https://nfpm.goreleaser.com).
+On a Mac, `macos/package.sh` makes the app and the disk image,
 and `macos/render.sh` renders the icons and the disk image's background from
 their SVGs.
 
