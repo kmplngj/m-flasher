@@ -8,6 +8,7 @@
 mod boards;
 mod cli;
 mod controller;
+mod fonts;
 mod formats;
 mod jl;
 mod ops;
