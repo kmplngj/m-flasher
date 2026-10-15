@@ -651,9 +651,10 @@ impl App {
                               Pro / Elite through the chip's USB download mode, and install the open bootloader.",
                              env!("CARGO_PKG_VERSION")), INK),
                     (String::new(), INK),
-                    ("Flash loader: JieLi's WL82 USB loader from the AC79 SDK (Apache 2.0). Protocol after \
-                      jl-uboot-tool by kagaimiq (MIT). Open bootloader: fm1-bootloader (Apache 2.0). Fonts: Barlow \
-                      Condensed, Share Tech Mono, IBM Plex Mono, VT323 (OFL).".into(), DIM),
+                    ("Flash loader: M-Flasher's own (Apache 2.0); JieLi's WL82 USB loader from the AC79 SDK \
+                      (Apache 2.0) if it does not answer. Protocol after jl-uboot-tool by kagaimiq (MIT). Open \
+                      bootloader: fm1-bootloader (Apache 2.0). Fonts: Saira, Barlow Condensed, Share Tech Mono, \
+                      IBM Plex Mono, VT323 (OFL).".into(), DIM),
                     (String::new(), INK),
                     ("Unofficial: not affiliated with M-VAVE or JieLi.".into(), DIM),
                 ], vec![("CLOSE", 0)]),
