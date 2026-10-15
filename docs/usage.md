@@ -23,14 +23,17 @@ the unit may leave download mode after about half a minute.
 **Linux** (x86-64 or ARM64, glibc 2.35 or newer). Extract
 `m-flasher-…-linux-x86_64.tar.gz`, or `m-flasher-…-linux-aarch64.tar.gz` for
 ARM64 (a Raspberry Pi 4 or 5 with 64-bit Raspberry Pi OS, say; `uname -m`
-tells which). M-Flasher talks
-to the unit through the SCSI generic driver: run `sudo modprobe sg` if there
-is no `/dev/sg*`. Either run it as root, or install the udev rule once so that
-it runs as you:
+tells which). Install the udev rule once, so that M-Flasher can reach the
+unit as you, then connect the unit (again, if it was connected):
 
 ```sh
 sudo cp m-flasher/70-m-flasher.rules /etc/udev/rules.d/ && sudo udevadm control --reload
 ```
+
+Run the window as you, not with sudo: sudo hides the desktop session from it.
+The command line also works as root (`sudo ./m-flasher info`). M-Flasher
+talks to the unit through the SCSI generic driver: run `sudo modprobe sg` if
+there is no `/dev/sg*`.
 
 `m-flasher.png` is the icon, for a launcher of your own.
 
