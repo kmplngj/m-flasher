@@ -32,7 +32,7 @@ fn failed(what: &str, e: rusb::Error) -> ScsiError {
 fn needs_root(e: rusb::Error) -> ScsiError {
     ScsiError::NeedsAdmin(format!(
         "no permission to take the unit from the system's USB disk driver ({e}): {}",
-        if cfg!(target_os = "macos") { "run M-Flasher with sudo" } else { "run as root or install the udev rule" }
+        if cfg!(target_os = "macos") { "run M-Flasher with sudo" } else { "install the udev rule and reconnect the unit, or run as root" }
     ))
 }
 

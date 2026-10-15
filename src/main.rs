@@ -34,8 +34,44 @@ fn main() {
         }
         std::process::exit(cli::run(args));
     }
+    #[cfg(target_os = "linux")]
+    if let Some(problem) = linux_display_problem() {
+        eprintln!("cannot open the window: {problem}");
+        std::process::exit(1);
+    }
     if let Err(e) = ui::run() {
         eprintln!("cannot open the window: {e}");
         std::process::exit(1);
     }
+}
+
+/// Why the window cannot open on this Linux desktop, if it cannot: checked
+/// first, as the windowing library would abort with a less helpful message.
+#[cfg(target_os = "linux")]
+fn linux_display_problem() -> Option<String> {
+    let set = |v| std::env::var_os(v).is_some_and(|s| !s.is_empty());
+    let sudo = if set("SUDO_USER") {
+        " sudo hides the desktop session: install the udev rule and run M-Flasher without sudo (see README.txt)."
+    } else {
+        ""
+    };
+    if !set("WAYLAND_DISPLAY") && !set("DISPLAY") {
+        return Some(format!("no desktop session (neither WAYLAND_DISPLAY nor DISPLAY is set).{sudo} The command line works without one: m-flasher --help"));
+    }
+    // X11 (no Wayland session): the keyboard library's X11 part, which a
+    // Wayland desktop may not have installed
+    let loads = |name: &str| {
+        let name = std::ffi::CString::new(name).unwrap();
+        // SAFETY: dlopen with a valid C string, closed again at once
+        unsafe {
+            let h = libc::dlopen(name.as_ptr(), libc::RTLD_LAZY);
+            !h.is_null() && libc::dlclose(h) == 0
+        }
+    };
+    if !set("WAYLAND_DISPLAY") && !loads("libxkbcommon-x11.so.0") && !loads("libxkbcommon-x11.so") {
+        return Some(format!(
+            "on X11 it needs libxkbcommon-x11 (Debian, Ubuntu: sudo apt install libxkbcommon-x11-0).{sudo}"
+        ));
+    }
+    None
 }

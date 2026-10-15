@@ -96,7 +96,7 @@ mod imp {
             match OpenOptions::new().read(true).write(true).open(path) {
                 Ok(file) => Ok(Device { file }),
                 Err(e) if e.kind() == std::io::ErrorKind::PermissionDenied => Err(ScsiError::NeedsAdmin(format!(
-                    "no permission to open {path}: install the udev rule (see the README) or run as root"
+                    "no permission to open {path}: install the udev rule and reconnect the unit (see README.txt), or run as root"
                 ))),
                 Err(e) => Err(ScsiError::Failed(format!("cannot open {path}: {e}"))),
             }

@@ -20,15 +20,32 @@ const USAGE: &str = "usage: m-flasher [find | info | backup [DIR] | restore BACK
        without arguments: the window";
 
 pub fn default_backup_dir() -> PathBuf {
-    let mut home = std::env::var_os("USERPROFILE").or_else(|| std::env::var_os("HOME")).map(PathBuf::from).unwrap_or_default();
-    if let Ok(user) = std::env::var("SUDO_USER") {
-        // under sudo the backups still go to the user's own Documents
-        if cfg!(target_os = "macos") && home == std::path::Path::new("/var/root") {
-            home = PathBuf::from("/Users").join(user);
-        }
-    }
+    let home = std::env::var_os("USERPROFILE").or_else(|| std::env::var_os("HOME")).map(PathBuf::from).unwrap_or_default();
+    // under sudo the backups still go to the user's own Documents
+    #[cfg(unix)]
+    let home = sudo_user_home().unwrap_or(home);
     let docs = home.join("Documents");
     (if docs.is_dir() { docs } else { home }).join("M-Flasher").join("backups")
+}
+
+/// The home folder of the user who ran sudo, when running as root under it.
+#[cfg(unix)]
+fn sudo_user_home() -> Option<PathBuf> {
+    use std::os::unix::ffi::OsStrExt;
+    let user = std::ffi::CString::new(std::env::var("SUDO_USER").ok()?).ok()?;
+    // SAFETY: getpwnam with a valid C string; the entry is read at once, before
+    // any other call that could overwrite it
+    unsafe {
+        if libc::geteuid() != 0 {
+            return None;
+        }
+        let pw = libc::getpwnam(user.as_ptr());
+        if pw.is_null() || (*pw).pw_dir.is_null() {
+            return None;
+        }
+        let dir = std::ffi::CStr::from_ptr((*pw).pw_dir);
+        Some(PathBuf::from(std::ffi::OsStr::from_bytes(dir.to_bytes())))
+    }
 }
 
 fn progress(done: usize, total: usize) {
