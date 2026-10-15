@@ -5,10 +5,10 @@
 use crate::controller::{AlertKind, BootSource, Controller, FileKind, Mark, Mode, Phase, PlanKind, Shared, Stage};
 use crate::sectormap::{Region, region_ranges};
 use eframe::egui::{
-    self, Align2, Color32, CornerRadius, FontData, FontDefinitions, FontFamily, FontId, Mesh, Pos2, Rect, Sense,
+    self, Align2, Color32, CornerRadius, FontFamily, FontId, Mesh, Pos2, Rect, Sense,
     Shape, Stroke, StrokeKind, TextureHandle, TextureOptions, TextureWrapMode, pos2, vec2,
 };
-use std::sync::Arc;
+use std::cell::RefCell;
 
 const W: f32 = 1536.0;
 const H: f32 = 1024.0;
@@ -63,6 +63,7 @@ pub struct App {
     /// When an inactive key was last pressed: the LCD's bottom line, which
     /// says what is needed, flashes for a moment.
     nudged: f64,
+    fonts: crate::fonts::Fonts,
 }
 
 /// How long the LCD's bottom line flashes after an inactive key is pressed (s).
@@ -70,10 +71,11 @@ const NUDGE: f64 = 1.2;
 
 impl App {
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
-        install_fonts(&cc.egui_ctx);
+        let fonts = crate::fonts::Fonts::default();
+        fonts.install(&cc.egui_ctx);
         // MFLASHER_DIALOG=about opens the About dialog at start (for screenshots)
         let dialog = if std::env::var("MFLASHER_DIALOG").as_deref() == Ok("about") { Dialog::About } else { Dialog::None };
-        App { ctl: Controller::new(cc.egui_ctx.clone()), dialog, noise: None, nudged: f64::NEG_INFINITY }
+        App { ctl: Controller::new(cc.egui_ctx.clone()), dialog, noise: None, nudged: f64::NEG_INFINITY, fonts }
     }
 }
 
@@ -126,7 +128,10 @@ impl eframe::App for App {
         let s = (screen.width() / W).min(screen.height() / H);
         let board = Board { s, o: screen.center() - vec2(W * s, H * s) / 2.0 };
         let painter = ui.painter().clone();
-        let p = Painter { p: &painter, b: &board };
+        // letters the fonts lack, from the texts drawn: looked for after the frame
+        let fonts = std::mem::take(&mut self.fonts);
+        let missing = RefCell::new(vec![]);
+        let p = Painter { p: &painter, b: &board, fonts: &fonts, missing: &missing };
         let noise = self.noise.get_or_insert_with(|| noise_texture(&ctx)).clone();
         let dev = st.device.as_ref();
         let busy = st.busy;
@@ -478,6 +483,7 @@ impl eframe::App for App {
         let lines: Vec<&String> = st.log.iter().rev().take(4).collect();
         for (i, l) in lines.iter().rev().enumerate() {
             let col = if l.contains("Refused") || l.contains("error") || l.contains("gone") { WARN } else { hex(0xcfeee2) };
+            p.note("plex", l);
             clip.text(board.p(508.0, 920.0 + i as f32 * 19.0), Align2::LEFT_CENTER, l.as_str(), board.f("plex", 13.0), col);
         }
 
@@ -486,6 +492,14 @@ impl eframe::App for App {
 
         // ---- dialogs ----
         self.dialogs(ui, &p, &st, &line);
+
+        let mut fonts = fonts;
+        let missing = missing.into_inner();
+        if !missing.is_empty() && fonts.search(&missing) {
+            fonts.install(&ctx);
+            ctx.request_repaint();
+        }
+        self.fonts = fonts;
     }
 }
 
@@ -767,23 +781,6 @@ pub fn run() -> eframe::Result {
 
 // ---- drawing helpers (board coordinates, text, keys, icons) ----
 
-pub fn install_fonts(ctx: &egui::Context) {
-    let mut fonts = FontDefinitions::default();
-    // egui's own fonts as fallbacks, for symbols our fonts lack (the check mark)
-    let fallback = fonts.families[&FontFamily::Proportional].clone();
-    let mut add = |name: &str, bytes: &'static [u8]| {
-        fonts.font_data.insert(name.to_owned(), Arc::new(FontData::from_static(bytes)));
-        let mut list = vec![name.to_owned()];
-        list.extend(fallback.iter().cloned());
-        fonts.families.insert(FontFamily::Name(name.into()), list);
-    };
-    add("cond", include_bytes!("../assets/BarlowCondensed-SemiBold.ttf"));
-    add("tech", include_bytes!("../assets/ShareTechMono-Regular.ttf"));
-    add("plex", include_bytes!("../assets/IBMPlexMono-Regular.ttf"));
-    add("lcd", include_bytes!("../assets/VT323-Regular.ttf"));
-    ctx.set_fonts(fonts);
-}
-
 /// Board coordinates -> screen.
 struct Board {
     s: f32,
@@ -805,9 +802,15 @@ impl Board {
 struct Painter<'a> {
     p: &'a egui::Painter,
     b: &'a Board,
+    fonts: &'a crate::fonts::Fonts,
+    missing: &'a RefCell<Vec<char>>,
 }
 
 impl Painter<'_> {
+    /// Notes the letters of a text that the fonts lack.
+    fn note(&self, family: &str, s: &str) {
+        self.fonts.missing(family, s, &mut self.missing.borrow_mut());
+    }
     fn rect(&self, r: Rect, fill: Color32) {
         self.p.rect_filled(r, CornerRadius::ZERO, fill);
     }
@@ -837,6 +840,7 @@ impl Painter<'_> {
     #[allow(clippy::too_many_arguments)]
     fn text(&self, x: f32, y: f32, anchor: Align2, s: &str, family: &str, size: f32, color: Color32, spacing: f32) -> f32 {
         let b = self.b;
+        self.note(family, s);
         let mut job = egui::text::LayoutJob::default();
         job.append(
             s,
