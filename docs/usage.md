@@ -20,22 +20,26 @@ Settings → Privacy & Security → Open Anyway**. When the app finds the unit:
 Start the app soon after connecting the unit: left with macOS's disk driver,
 the unit may leave download mode after about half a minute.
 
-**Linux** (x86-64 or ARM64, glibc 2.35 or newer). Extract
-`m-flasher-…-linux-x86_64.tar.gz`, or `m-flasher-…-linux-aarch64.tar.gz` for
-ARM64 (a Raspberry Pi 4 or 5 with 64-bit Raspberry Pi OS, say; `uname -m`
-tells which). Install the udev rule once, so that M-Flasher can reach the
-unit as you, then connect the unit (again, if it was connected):
+**Linux** (x86-64 or ARM64, glibc 2.35 or newer). The packages set up
+everything: the program, the udev rule that lets you reach the unit without
+root, the SCSI generic driver, and a launcher in the app menu.
 
-```sh
-sudo cp m-flasher/70-m-flasher.rules /etc/udev/rules.d/ && sudo udevadm control --reload
-```
+- Debian 12+, Ubuntu 22.04+, Linux Mint, Raspberry Pi OS (64-bit):
+  `sudo apt install ./m-flasher_…_amd64.deb` (`_arm64.deb` for ARM64)
+- Fedora, RHEL / AlmaLinux / Rocky 10, openSUSE Tumbleweed and Leap 16:
+  `sudo dnf install ./m-flasher-….x86_64.rpm`, or `sudo zypper install
+  ./m-flasher-….x86_64.rpm` (`.aarch64.rpm` for ARM64)
 
-Run the window as you, not with sudo: sudo hides the desktop session from it.
-The command line also works as root (`sudo ./m-flasher info`). M-Flasher
-talks to the unit through the SCSI generic driver: run `sudo modprobe sg` if
-there is no `/dev/sg*`.
+Connect the unit after installing (again, if it was connected), and start
+M-Flasher from the app menu, or `m-flasher` in a terminal, as yourself: under
+sudo the window cannot reach the desktop. The packages do not update
+themselves: install the new one from each release.
 
-`m-flasher.png` is the icon, for a launcher of your own.
+On other distributions, use `m-flasher-…-linux-x86_64.tar.gz` (or
+`-aarch64`; `uname -m` tells which) and follow its `README.txt`: install the
+udev rule once, connect the unit, and run `./m-flasher`. M-Flasher talks to
+the unit through the SCSI generic driver: run `sudo modprobe sg` if there is
+no `/dev/sg*`. `m-flasher.png` is the icon, for a launcher of your own.
 
 ## Download mode
 
@@ -106,7 +110,7 @@ and need a typed `yes`, or `--yes`.
 - macOS: `/Applications/M-Flasher.app/Contents/MacOS/M-Flasher info`, from
   Terminal; it asks for the password the same way, or run it with `sudo`. Not
   over SSH: macOS asks about the removable volume only on the screen.
-- Linux: `./m-flasher info`.
+- Linux: `m-flasher info` (from the tarball: `./m-flasher info`); `man m-flasher` with the packages.
 
 ## Slow USB ports
 
