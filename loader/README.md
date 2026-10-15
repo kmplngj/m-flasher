@@ -30,22 +30,16 @@ Not implemented, on purpose: burning the chip-key efuse, chip erase.
 **Speed.** The loader raises the CPU from the ROM's 48 MHz to 96 MHz (the
 low-speed bus, which clocks the SPI flash and the display, stays at 48 MHz),
 and reads the flash by DMA while the previous piece goes out over USB. A full
-1 MiB read then takes 1.2 s (860 KB/s; full-speed USB tops out near 1 MB/s),
-a firmware install about 10 s in all.
+1 MiB read takes 1.2 s (860 KB/s; full-speed USB tops out near 1 MB/s), a
+firmware install about 10 s in all.
 
-That is on a good USB controller. Some (seen: AMD's 600-series chipset
-controller, on all of its ports) collect only 3-4 of the unit's 64-byte
-packets per millisecond, against 13-15 on others: about 230 KB/s, a 1 MiB read
-in 4.5 s, whatever the unit does. Measured on one PC:
-
-| Port | Controller | USB | 1 MiB read |
-| --- | --- | --- | --- |
-| case front, motherboard USB 2 and USB-C, Thunderbolt card | AMD chipset | ~230 KB/s | 4.3-4.6 s |
-| motherboard USB 3 | the CPU's own | 870 KB/s (at 48 MHz) - 1 MB/s (96 MHz) | 1.2 s |
-
-(A Thunderbolt card's ports carry USB 1/2 devices over its USB 2 header cable,
-to the chipset.) The unit always has the next packet ready; the time is the
-PC's. M-Flasher logs the read speed and a tip when the port is slow.
+The PC's USB controller sets the limit beyond that. Some collect only 3-4 of
+the unit's 64-byte packets per millisecond, against 13-15 on others: about
+230 KB/s, a 1 MiB read in 4.5 s, whatever the unit does. AMD's 600-series
+chipset controller is one, on all of its ports (including a Thunderbolt card's,
+whose USB 2 runs through the chipset); the CPU's own USB 3 ports on the same
+PC read at full speed. M-Flasher logs the read speed, and a tip when the port
+is slow.
 
 **Build.** With JieLi's pi32v2 toolchain: `./build.sh 0x01C20000` (and
 `0x01C28000`: the app carries both, so a new loader is never written over a
