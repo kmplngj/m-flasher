@@ -8,22 +8,36 @@ on:
 
 jobs:
   linux:
-    # built on 22.04: the binary runs on glibc 2.35 and newer
-    runs-on: ubuntu-22.04
+    # built on 22.04: the binaries run on glibc 2.35 and newer
+    strategy:
+      matrix:
+        include:
+          - arch: x86_64
+            runner: ubuntu-22.04
+          - arch: aarch64
+            runner: ubuntu-22.04-arm
+    runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v7
+      - name: Rust (if the image lacks it)
+        run: |
+          if ! command -v cargo >/dev/null; then
+            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
+            echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+          fi
       - run: cargo test --release
       - run: cargo build --release
       - name: Package
         run: |
           mkdir -p pkg/m-flasher
           cp target/release/m-flasher linux/70-m-flasher.rules linux/m-flasher.png linux/README.txt LICENSE pkg/m-flasher/
-          tar -C pkg -czf m-flasher-linux-x86_64.tar.gz m-flasher
-          ls -l target/release/m-flasher m-flasher-linux-x86_64.tar.gz
+          tar -C pkg -czf m-flasher-linux-${{ matrix.arch }}.tar.gz m-flasher
+          ls -l target/release/m-flasher m-flasher-linux-${{ matrix.arch }}.tar.gz
+          file target/release/m-flasher
       - uses: actions/upload-artifact@v7
         with:
-          name: m-flasher-linux-x86_64
-          path: m-flasher-linux-x86_64.tar.gz
+          name: m-flasher-linux-${{ matrix.arch }}
+          path: m-flasher-linux-${{ matrix.arch }}.tar.gz
 
   windows:
     runs-on: windows-latest
@@ -86,10 +100,12 @@ jobs:
           v=${GITHUB_REF_NAME#v}
           mv M-Flasher-windows.zip M-Flasher-$v-windows.zip
           mv m-flasher-linux-x86_64.tar.gz m-flasher-$v-linux-x86_64.tar.gz
+          mv m-flasher-linux-aarch64.tar.gz m-flasher-$v-linux-aarch64.tar.gz
           mv M-Flasher-macos.dmg M-Flasher-$v-macos.dmg
       - uses: softprops/action-gh-release@v3
         with:
           files: |
             M-Flasher-*-windows.zip
             m-flasher-*-linux-x86_64.tar.gz
+            m-flasher-*-linux-aarch64.tar.gz
             M-Flasher-*-macos.dmg

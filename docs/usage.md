@@ -20,7 +20,10 @@ Settings → Privacy & Security → Open Anyway**. When the app finds the unit:
 Start the app soon after connecting the unit: left with macOS's disk driver,
 the unit may leave download mode after about half a minute.
 
-**Linux** (x86-64). Extract `m-flasher-…-linux-x86_64.tar.gz`. M-Flasher talks
+**Linux** (x86-64 or ARM64, glibc 2.35 or newer). Extract
+`m-flasher-…-linux-x86_64.tar.gz`, or `m-flasher-…-linux-aarch64.tar.gz` for
+ARM64 (a Raspberry Pi 4 or 5 with 64-bit Raspberry Pi OS, say; `uname -m`
+tells which). M-Flasher talks
 to the unit through the SCSI generic driver: run `sudo modprobe sg` if there
 is no `/dev/sg*`. Either run it as root, or install the udev rule once so that
 it runs as you:
