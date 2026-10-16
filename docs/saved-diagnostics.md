@@ -100,7 +100,8 @@ application-only execution remain separate work in #13/#14.
 
 ## Input limits and tests
 
-Inputs must be nonempty regular files, at most 16 MiB; receipts at most 128 KiB.
+Inputs must be nonempty regular files, at most 16 MiB; serialized receipts at most 7 MiB
+(including at most 1 MiB of decoded provenance, matching the writer contract).
 Symlinks, directories and special files are rejected. Unix final opens use
 `O_NOFOLLOW | O_NONBLOCK` before descriptor validation, so substitution with a
 symlink is not followed and a FIFO cannot block inspection. Windows opens the

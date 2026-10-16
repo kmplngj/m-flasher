@@ -731,7 +731,7 @@ mod native {
             if first.len() != RAW_LEN || second.len() != RAW_LEN {
                 return Err("both raw passes must be exactly 1 MiB".into());
             }
-            if provenance.len() > 1024 * 1024 {
+            if provenance.len() > crate::saved_receipt::MAX_PROVENANCE {
                 return Err("storage provenance exceeds the bounded receipt size".into());
             }
             if self.first.raw.metadata().map_err(|e| e.to_string())?.len() != 0
@@ -840,7 +840,7 @@ mod native {
         }
         fn accept_inner(&self, provenance: &str) -> Result<(), String> {
             self.check()?;
-            if provenance.len() > 1024 * 1024 {
+            if provenance.len() > crate::saved_receipt::MAX_PROVENANCE {
                 return Err("capture provenance exceeds the bounded receipt size".into());
             }
             let copies = self

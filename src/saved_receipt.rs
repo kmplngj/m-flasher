@@ -2,7 +2,10 @@
 //! unauthenticated local consistency inputs, never fresh hardware evidence.
 use std::collections::BTreeMap;
 pub const SCHEMA: &str = "fmr-protected-copies-v1";
-pub const MAX_RECEIPT: usize = 128 * 1024;
+pub const MAX_PROVENANCE: usize = 1024 * 1024;
+// A control byte can expand to six JSON bytes; leave room for the fixed v1
+// envelope. Every receipt the existing writer accepts must fit this bound.
+pub const MAX_RECEIPT: usize = 7 * 1024 * 1024;
 #[derive(Debug, PartialEq)]
 enum Value { Text(String), Number(u64), Bool(bool) }
 #[derive(Debug)]
@@ -121,7 +124,7 @@ impl Receipt {
             for name in ["first_filesystem", "second_filesystem", "first_directory_inode", "second_directory_inode"] {
                 if !matches!(take(name)?, Value::Number(_)) { return Err(()); }
             }
-            if !matches!(take("provenance_json")?, Value::Text(_)) { return Err(()); }
+            if !matches!(take("provenance_json")?, Value::Text(s) if s.len() <= MAX_PROVENANCE) { return Err(()); }
             if !fields.is_empty() { return Err(()); }
             Ok(Self { length, sha256, stage })
         };

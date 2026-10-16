@@ -151,3 +151,16 @@ fn package_padding_cannot_supply_missing_application_bytes() {
     assert_eq!(saved.recovery, RecoveryState::CorruptApp);
     assert!(saved.layout_valid); // declared data/address geometry remains known
 }
+
+#[test]
+fn receipt_accepts_maximum_writer_provenance_after_json_escaping() {
+    let base = receipt(&"ab".repeat(32));
+    let prefix = base.find("private key").unwrap();
+    let mut text = base[..prefix].to_string();
+    text.push_str(&"\\u0000".repeat(crate::saved_receipt::MAX_PROVENANCE));
+    text.push_str("\"}");
+    assert!(text.len() < crate::saved_receipt::MAX_RECEIPT);
+    assert!(Receipt::parse(text.as_bytes()).is_ok());
+    text.insert_str(prefix, "\\u0000");
+    assert!(Receipt::parse(text.as_bytes()).is_err());
+}
