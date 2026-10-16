@@ -1,0 +1,848 @@
+{
+  "verified_at_utc": "2026-10-16T18:34:24.039016+00:00",
+  "method": "Read-only gh pr view and gh api; no tests/builds or remote mutations",
+  "pull_requests": [
+    {
+      "baseRefName": "main",
+      "baseRefOid": "9d962747437d92cbab594c2320b586d162c6572d",
+      "files": [
+        {
+          "path": "src/main.rs",
+          "additions": 2,
+          "deletions": 0,
+          "changeType": "MODIFIED"
+        },
+        {
+          "path": "src/usb.rs",
+          "additions": 9,
+          "deletions": 1,
+          "changeType": "MODIFIED"
+        },
+        {
+          "path": "src/usb_cbw.rs",
+          "additions": 99,
+          "deletions": 0,
+          "changeType": "ADDED"
+        }
+      ],
+      "headRefName": "kori/4-reject-short-cbw",
+      "headRefOid": "de20d0e7f2692ecd77f7ac95203dda5943811863",
+      "isDraft": false,
+      "mergeCommit": null,
+      "mergedAt": null,
+      "number": 7,
+      "state": "OPEN",
+      "statusCheckRollup": [],
+      "url": "https://github.com/jvitkauskas/m-flasher/pull/7"
+    },
+    {
+      "baseRefName": "main",
+      "baseRefOid": "9d962747437d92cbab594c2320b586d162c6572d",
+      "files": [
+        {
+          "path": "src/usb.rs",
+          "additions": 10,
+          "deletions": 4,
+          "changeType": "MODIFIED"
+        },
+        {
+          "path": "src/usb_data_in.rs",
+          "additions": 179,
+          "deletions": 0,
+          "changeType": "ADDED"
+        }
+      ],
+      "headRefName": "kori/4-upstream-exact-flash-reads",
+      "headRefOid": "f7086b370f474fe22795edf7de3561f6d64e72fe",
+      "isDraft": false,
+      "mergeCommit": null,
+      "mergedAt": null,
+      "number": 8,
+      "state": "OPEN",
+      "statusCheckRollup": [],
+      "url": "https://github.com/jvitkauskas/m-flasher/pull/8",
+      "workflows": [
+        {
+          "id": 38936309207,
+          "status": "completed",
+          "conclusion": "action_required",
+          "html_url": "https://github.com/jvitkauskas/m-flasher/actions/runs/38936309207",
+          "head_sha": "f7086b370f474fe22795edf7de3561f6d64e72fe"
+        }
+      ]
+    },
+    {
+      "baseRefName": "main",
+      "baseRefOid": "9d962747437d92cbab594c2320b586d162c6572d",
+      "files": [
+        {
+          "path": "src/backup_files.rs",
+          "additions": 303,
+          "deletions": 0,
+          "changeType": "ADDED"
+        },
+        {
+          "path": "src/main.rs",
+          "additions": 1,
+          "deletions": 0,
+          "changeType": "MODIFIED"
+        },
+        {
+          "path": "src/ops.rs",
+          "additions": 2,
+          "deletions": 2,
+          "changeType": "MODIFIED"
+        }
+      ],
+      "headRefName": "kori/10-upstream-exclusive-backups",
+      "headRefOid": "9613b66ec860c2c412b099e7193d1211e0785d78",
+      "isDraft": false,
+      "mergeCommit": null,
+      "mergedAt": null,
+      "number": 9,
+      "state": "OPEN",
+      "statusCheckRollup": [],
+      "url": "https://github.com/jvitkauskas/m-flasher/pull/9",
+      "workflows": [
+        {
+          "id": 38936332451,
+          "status": "completed",
+          "conclusion": "action_required",
+          "html_url": "https://github.com/jvitkauskas/m-flasher/actions/runs/38936332451",
+          "head_sha": "9613b66ec860c2c412b099e7193d1211e0785d78"
+        }
+      ]
+    },
+    {
+      "baseRefName": "main",
+      "baseRefOid": "5b7a77ea7e5ed82bc41bac198dfa1e73ccd53917",
+      "files": [
+        {
+          "path": ".github/workflows/offline-tests.yml",
+          "additions": 19,
+          "deletions": 0,
+          "changeType": "MODIFIED"
+        },
+        {
+          "path": "Cargo.lock",
+          "additions": 56,
+          "deletions": 3,
+          "changeType": "MODIFIED"
+        },
+        {
+          "path": "Cargo.toml",
+          "additions": 9,
+          "deletions": 0,
+          "changeType": "MODIFIED"
+        },
+        {
+          "path": "README.md",
+          "additions": 4,
+          "deletions": 0,
+          "changeType": "MODIFIED"
+        },
+        {
+          "path": "build.rs",
+          "additions": 14,
+          "deletions": 0,
+          "changeType": "MODIFIED"
+        },
+        {
+          "path": "docs/evidence/fm1-complete-raw-backup-2026-10-16.json",
+          "additions": 105,
+          "deletions": 0,
+          "changeType": "ADDED"
+        },
+        {
+          "path": "docs/evidence/fm1-reader-check-2026-10-16.json",
+          "additions": 82,
+          "deletions": 0,
+          "changeType": "ADDED"
+        },
+        {
+          "path": "docs/fm1-raw-backup.md",
+          "additions": 117,
+          "deletions": 0,
+          "changeType": "ADDED"
+        },
+        {
+          "path": "docs/fm1-reader-check.md",
+          "additions": 174,
+          "deletions": 0,
+          "changeType": "ADDED"
+        },
+        {
+          "path": "docs/fm1-roadmap.md",
+          "additions": 1,
+          "deletions": 1,
+          "changeType": "MODIFIED"
+        },
+        {
+          "path": "ram-reader/README.md",
+          "additions": 16,
+          "deletions": 12,
+          "changeType": "MODIFIED"
+        },
+        {
+          "path": "src/cli.rs",
+          "additions": 9,
+          "deletions": 0,
+          "changeType": "MODIFIED"
+        },
+        {
+          "path": "src/fmr_backup_cli.rs",
+          "additions": 240,
+          "deletions": 0,
+          "changeType": "ADDED"
+        },
+        {
+          "path": "src/fmr_backup_exchange.rs",
+          "additions": 60,
+          "deletions": 0,
+          "changeType": "ADDED"
+        },
+        {
+          "path": "src/fmr_backup_ipc.rs",
+          "additions": 94,
+          "deletions": 0,
+          "changeType": "ADDED"
+        },
+        {
+          "path": "src/fmr_backup_options.rs",
+          "additions": 127,
+          "deletions": 0,
+          "changeType": "ADDED"
+        },
+        {
+          "path": "src/fmr_backup_pipe.rs",
+          "additions": 206,
+          "deletions": 0,
+          "changeType": "ADDED"
+        },
+        {
+          "path": "src/fmr_bootstrap.rs",
+          "additions": 84,
+          "deletions": 0,
+          "changeType": "ADDED"
+        },
+        {
+          "path": "src/fmr_bot.rs",
+          "additions": 220,
+          "deletions": 0,
+          "changeType": "ADDED"
+        },
+        {
+          "path": "src/fmr_capture.c",
+          "additions": 116,
+          "deletions": 0,
+          "changeType": "ADDED"
+        },
+        {
+          "path": "src/fmr_cli.rs",
+          "additions": 393,
+          "deletions": 0,
+          "changeType": "ADDED"
+        },
+        {
+          "path": "src/fmr_full.rs",
+          "additions": 207,
+          "deletions": 0,
+          "changeType": "ADDED"
+        },
+        {
+          "path": "src/fmr_ipc.rs",
+          "additions": 115,
+          "deletions": 0,
+          "changeType": "ADDED"
+        },
+        {
+          "path": "src/fmr_job_guard.rs",
+          "additions": 287,
+          "deletions": 0,
+          "changeType": "ADDED"
+        },
+        {
+          "path": "src/fmr_native.rs",
+          "additions": 479,
+          "deletions": 0,
+          "changeType": "ADDED"
+        },
+        {
+          "path": "src/fmr_options.rs",
+          "additions": 88,
+          "deletions": 0,
+          "changeType": "ADDED"
+        },
+        {
+          "path": "src/fmr_reader.rs",
+          "additions": 205,
+          "deletions": 0,
+          "changeType": "ADDED"
+        },
+        {
+          "path": "src/fmr_storage.rs",
+          "additions": 1410,
+          "deletions": 0,
+          "changeType": "ADDED"
+        },
+        {
+          "path": "src/macos.rs",
+          "additions": 326,
+          "deletions": 29,
+          "changeType": "MODIFIED"
+        },
+        {
+          "path": "src/main.rs",
+          "additions": 52,
+          "deletions": 0,
+          "changeType": "MODIFIED"
+        },
+        {
+          "path": "tests/support/fmr_backup_exchange.rs",
+          "additions": 408,
+          "deletions": 0,
+          "changeType": "ADDED"
+        },
+        {
+          "path": "tests/support/fmr_backup_ipc.rs",
+          "additions": 139,
+          "deletions": 0,
+          "changeType": "ADDED"
+        },
+        {
+          "path": "tests/support/fmr_backup_options.rs",
+          "additions": 185,
+          "deletions": 0,
+          "changeType": "ADDED"
+        },
+        {
+          "path": "tests/support/fmr_bootstrap.rs",
+          "additions": 235,
+          "deletions": 0,
+          "changeType": "ADDED"
+        },
+        {
+          "path": "tests/support/fmr_bot.rs",
+          "additions": 278,
+          "deletions": 0,
+          "changeType": "ADDED"
+        },
+        {
+          "path": "tests/support/fmr_full.rs",
+          "additions": 372,
+          "deletions": 0,
+          "changeType": "ADDED"
+        },
+        {
+          "path": "tests/support/fmr_ipc.rs",
+          "additions": 248,
+          "deletions": 0,
+          "changeType": "ADDED"
+        },
+        {
+          "path": "tests/support/fmr_options.rs",
+          "additions": 186,
+          "deletions": 0,
+          "changeType": "ADDED"
+        },
+        {
+          "path": "tests/support/fmr_reader.rs",
+          "additions": 190,
+          "deletions": 0,
+          "changeType": "ADDED"
+        },
+        {
+          "path": "tools/fmr_stock_entry.c",
+          "additions": 75,
+          "deletions": 0,
+          "changeType": "ADDED"
+        },
+        {
+          "path": "tools/run_offline_tests.py",
+          "additions": 6,
+          "deletions": 1,
+          "changeType": "MODIFIED"
+        }
+      ],
+      "headRefName": "kori/9-full-usb-backup",
+      "headRefOid": "4efefbecc8982c526c7ffeb2f8937a4be352052d",
+      "isDraft": false,
+      "mergeCommit": {
+        "oid": "9005a0da9a879ca8a09aec55d57a46850649406b"
+      },
+      "mergedAt": "2026-10-16T16:35:49Z",
+      "number": 24,
+      "state": "MERGED",
+      "statusCheckRollup": [
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-16T16:33:09Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/kmplngj/m-flasher/actions/runs/38932215405/job/117078772019",
+          "name": "linux (x86_64, ubuntu-22.04)",
+          "startedAt": "2026-10-16T16:28:28Z",
+          "status": "COMPLETED",
+          "workflowName": "build"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-16T16:31:56Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/kmplngj/m-flasher/actions/runs/38932206422/job/117078740535",
+          "name": "linux (x86_64, ubuntu-22.04)",
+          "startedAt": "2026-10-16T16:28:24Z",
+          "status": "COMPLETED",
+          "workflowName": "build"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-16T16:28:43Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/kmplngj/m-flasher/actions/runs/38932215402/job/117078771813",
+          "name": "std-only (ubuntu-24.04, python3)",
+          "startedAt": "2026-10-16T16:28:28Z",
+          "status": "COMPLETED",
+          "workflowName": "offline host tests"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-16T16:28:31Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/kmplngj/m-flasher/actions/runs/38932206372/job/117078740519",
+          "name": "std-only (ubuntu-24.04, python3)",
+          "startedAt": "2026-10-16T16:28:24Z",
+          "status": "COMPLETED",
+          "workflowName": "offline host tests"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-16T16:28:44Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/kmplngj/m-flasher/actions/runs/38932215523/job/117078772103",
+          "name": "offline-reader (ubuntu-24.04)",
+          "startedAt": "2026-10-16T16:28:28Z",
+          "status": "COMPLETED",
+          "workflowName": "ram-reader"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-16T16:31:50Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/kmplngj/m-flasher/actions/runs/38932215405/job/117078771934",
+          "name": "linux (aarch64, ubuntu-22.04-arm)",
+          "startedAt": "2026-10-16T16:28:30Z",
+          "status": "COMPLETED",
+          "workflowName": "build"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-16T16:31:42Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/kmplngj/m-flasher/actions/runs/38932206422/job/117078740300",
+          "name": "linux (aarch64, ubuntu-22.04-arm)",
+          "startedAt": "2026-10-16T16:28:27Z",
+          "status": "COMPLETED",
+          "workflowName": "build"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-16T16:29:12Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/kmplngj/m-flasher/actions/runs/38932215402/job/117078772051",
+          "name": "std-only (macos-14, python3)",
+          "startedAt": "2026-10-16T16:29:01Z",
+          "status": "COMPLETED",
+          "workflowName": "offline host tests"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-16T16:28:38Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/kmplngj/m-flasher/actions/runs/38932206372/job/117078740156",
+          "name": "std-only (macos-14, python3)",
+          "startedAt": "2026-10-16T16:28:28Z",
+          "status": "COMPLETED",
+          "workflowName": "offline host tests"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-16T16:28:54Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/kmplngj/m-flasher/actions/runs/38932215523/job/117078772362",
+          "name": "offline-reader (macos-14)",
+          "startedAt": "2026-10-16T16:28:45Z",
+          "status": "COMPLETED",
+          "workflowName": "ram-reader"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-16T16:29:05Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/kmplngj/m-flasher/actions/runs/38932215402/job/117078771864",
+          "name": "std-only (windows-latest, python)",
+          "startedAt": "2026-10-16T16:28:31Z",
+          "status": "COMPLETED",
+          "workflowName": "offline host tests"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-16T16:28:59Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/kmplngj/m-flasher/actions/runs/38932206372/job/117078740649",
+          "name": "std-only (windows-latest, python)",
+          "startedAt": "2026-10-16T16:28:25Z",
+          "status": "COMPLETED",
+          "workflowName": "offline host tests"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-16T16:32:39Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/kmplngj/m-flasher/actions/runs/38932215405/job/117078771818",
+          "name": "windows",
+          "startedAt": "2026-10-16T16:28:28Z",
+          "status": "COMPLETED",
+          "workflowName": "build"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-16T16:32:53Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/kmplngj/m-flasher/actions/runs/38932206422/job/117078740526",
+          "name": "windows",
+          "startedAt": "2026-10-16T16:28:24Z",
+          "status": "COMPLETED",
+          "workflowName": "build"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-16T16:30:12Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/kmplngj/m-flasher/actions/runs/38932215402/job/117078771300",
+          "name": "guarded-cargo",
+          "startedAt": "2026-10-16T16:28:28Z",
+          "status": "COMPLETED",
+          "workflowName": "offline host tests"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-16T16:29:53Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/kmplngj/m-flasher/actions/runs/38932206372/job/117078740697",
+          "name": "guarded-cargo",
+          "startedAt": "2026-10-16T16:28:24Z",
+          "status": "COMPLETED",
+          "workflowName": "offline host tests"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-16T16:35:10Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/kmplngj/m-flasher/actions/runs/38932215405/job/117078771459",
+          "name": "macos",
+          "startedAt": "2026-10-16T16:28:34Z",
+          "status": "COMPLETED",
+          "workflowName": "build"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-16T16:35:30Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/kmplngj/m-flasher/actions/runs/38932206422/job/117078740624",
+          "name": "macos",
+          "startedAt": "2026-10-16T16:28:30Z",
+          "status": "COMPLETED",
+          "workflowName": "build"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-16T16:29:27Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/kmplngj/m-flasher/actions/runs/38932215402/job/117078771823",
+          "name": "reader-adapter-compile (macos-14, reader-qualification)",
+          "startedAt": "2026-10-16T16:28:34Z",
+          "status": "COMPLETED",
+          "workflowName": "offline host tests"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-16T16:29:08Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/kmplngj/m-flasher/actions/runs/38932206372/job/117078740657",
+          "name": "reader-adapter-compile (macos-14, reader-qualification)",
+          "startedAt": "2026-10-16T16:28:29Z",
+          "status": "COMPLETED",
+          "workflowName": "offline host tests"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-16T16:29:07Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/kmplngj/m-flasher/actions/runs/38932215402/job/117078772054",
+          "name": "reader-adapter-compile (ubuntu-24.04, reader-qualification,usb)",
+          "startedAt": "2026-10-16T16:28:28Z",
+          "status": "COMPLETED",
+          "workflowName": "offline host tests"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-16T16:29:11Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/kmplngj/m-flasher/actions/runs/38932206372/job/117078740936",
+          "name": "reader-adapter-compile (ubuntu-24.04, reader-qualification,usb)",
+          "startedAt": "2026-10-16T16:28:25Z",
+          "status": "COMPLETED",
+          "workflowName": "offline host tests"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-16T16:33:34Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/kmplngj/m-flasher/actions/runs/38932215405/job/117080874256",
+          "name": "packages-test (x86_64, ubuntu-24.04, debian:12, deb)",
+          "startedAt": "2026-10-16T16:33:12Z",
+          "status": "COMPLETED",
+          "workflowName": "build"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-16T16:32:22Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/kmplngj/m-flasher/actions/runs/38932206422/job/117080333530",
+          "name": "packages-test (x86_64, ubuntu-24.04, debian:12, deb)",
+          "startedAt": "2026-10-16T16:31:59Z",
+          "status": "COMPLETED",
+          "workflowName": "build"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-16T16:34:13Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/kmplngj/m-flasher/actions/runs/38932215405/job/117080874012",
+          "name": "packages-test (x86_64, ubuntu-24.04, debian:13, deb, lintian)",
+          "startedAt": "2026-10-16T16:33:11Z",
+          "status": "COMPLETED",
+          "workflowName": "build"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-16T16:33:02Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/kmplngj/m-flasher/actions/runs/38932206422/job/117080333519",
+          "name": "packages-test (x86_64, ubuntu-24.04, debian:13, deb, lintian)",
+          "startedAt": "2026-10-16T16:31:58Z",
+          "status": "COMPLETED",
+          "workflowName": "build"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-16T16:33:39Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/kmplngj/m-flasher/actions/runs/38932215405/job/117080873983",
+          "name": "packages-test (x86_64, ubuntu-24.04, ubuntu:22.04, deb)",
+          "startedAt": "2026-10-16T16:33:11Z",
+          "status": "COMPLETED",
+          "workflowName": "build"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-16T16:32:39Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/kmplngj/m-flasher/actions/runs/38932206422/job/117080333373",
+          "name": "packages-test (x86_64, ubuntu-24.04, ubuntu:22.04, deb)",
+          "startedAt": "2026-10-16T16:31:58Z",
+          "status": "COMPLETED",
+          "workflowName": "build"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-16T16:33:56Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/kmplngj/m-flasher/actions/runs/38932215405/job/117080874021",
+          "name": "packages-test (x86_64, ubuntu-24.04, ubuntu:24.04, deb)",
+          "startedAt": "2026-10-16T16:33:11Z",
+          "status": "COMPLETED",
+          "workflowName": "build"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-16T16:32:29Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/kmplngj/m-flasher/actions/runs/38932206422/job/117080333301",
+          "name": "packages-test (x86_64, ubuntu-24.04, ubuntu:24.04, deb)",
+          "startedAt": "2026-10-16T16:31:58Z",
+          "status": "COMPLETED",
+          "workflowName": "build"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-16T16:34:56Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/kmplngj/m-flasher/actions/runs/38932215405/job/117080874206",
+          "name": "packages-test (x86_64, ubuntu-24.04, fedora:latest, rpm, rpmlint)",
+          "startedAt": "2026-10-16T16:33:11Z",
+          "status": "COMPLETED",
+          "workflowName": "build"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-16T16:33:41Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/kmplngj/m-flasher/actions/runs/38932206422/job/117080333567",
+          "name": "packages-test (x86_64, ubuntu-24.04, fedora:latest, rpm, rpmlint)",
+          "startedAt": "2026-10-16T16:32:00Z",
+          "status": "COMPLETED",
+          "workflowName": "build"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-16T16:33:43Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/kmplngj/m-flasher/actions/runs/38932215405/job/117080874239",
+          "name": "packages-test (x86_64, ubuntu-24.04, almalinux:10, rpm)",
+          "startedAt": "2026-10-16T16:33:12Z",
+          "status": "COMPLETED",
+          "workflowName": "build"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-16T16:32:24Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/kmplngj/m-flasher/actions/runs/38932206422/job/117080333323",
+          "name": "packages-test (x86_64, ubuntu-24.04, almalinux:10, rpm)",
+          "startedAt": "2026-10-16T16:31:58Z",
+          "status": "COMPLETED",
+          "workflowName": "build"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-16T16:33:35Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/kmplngj/m-flasher/actions/runs/38932215405/job/117080874207",
+          "name": "packages-test (x86_64, ubuntu-24.04, opensuse/leap:16.0, rpm)",
+          "startedAt": "2026-10-16T16:33:11Z",
+          "status": "COMPLETED",
+          "workflowName": "build"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-16T16:32:37Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/kmplngj/m-flasher/actions/runs/38932206422/job/117080333471",
+          "name": "packages-test (x86_64, ubuntu-24.04, opensuse/leap:16.0, rpm)",
+          "startedAt": "2026-10-16T16:31:59Z",
+          "status": "COMPLETED",
+          "workflowName": "build"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-16T16:33:35Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/kmplngj/m-flasher/actions/runs/38932215405/job/117080874108",
+          "name": "packages-test (x86_64, ubuntu-24.04, opensuse/tumbleweed, rpm)",
+          "startedAt": "2026-10-16T16:33:11Z",
+          "status": "COMPLETED",
+          "workflowName": "build"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-16T16:32:32Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/kmplngj/m-flasher/actions/runs/38932206422/job/117080333500",
+          "name": "packages-test (x86_64, ubuntu-24.04, opensuse/tumbleweed, rpm)",
+          "startedAt": "2026-10-16T16:31:58Z",
+          "status": "COMPLETED",
+          "workflowName": "build"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-16T16:33:37Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/kmplngj/m-flasher/actions/runs/38932215405/job/117080874226",
+          "name": "packages-test (aarch64, ubuntu-24.04-arm, debian:12, deb)",
+          "startedAt": "2026-10-16T16:33:16Z",
+          "status": "COMPLETED",
+          "workflowName": "build"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-16T16:32:20Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/kmplngj/m-flasher/actions/runs/38932206422/job/117080333402",
+          "name": "packages-test (aarch64, ubuntu-24.04-arm, debian:12, deb)",
+          "startedAt": "2026-10-16T16:32:02Z",
+          "status": "COMPLETED",
+          "workflowName": "build"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-16T16:33:39Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/kmplngj/m-flasher/actions/runs/38932215405/job/117080874081",
+          "name": "packages-test (aarch64, ubuntu-24.04-arm, ubuntu:24.04, deb)",
+          "startedAt": "2026-10-16T16:33:14Z",
+          "status": "COMPLETED",
+          "workflowName": "build"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-16T16:32:32Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/kmplngj/m-flasher/actions/runs/38932206422/job/117080333385",
+          "name": "packages-test (aarch64, ubuntu-24.04-arm, ubuntu:24.04, deb)",
+          "startedAt": "2026-10-16T16:32:00Z",
+          "status": "COMPLETED",
+          "workflowName": "build"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-16T16:33:49Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/kmplngj/m-flasher/actions/runs/38932215405/job/117080873994",
+          "name": "packages-test (aarch64, ubuntu-24.04-arm, fedora:latest, rpm)",
+          "startedAt": "2026-10-16T16:33:13Z",
+          "status": "COMPLETED",
+          "workflowName": "build"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-16T16:32:51Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/kmplngj/m-flasher/actions/runs/38932206422/job/117080333380",
+          "name": "packages-test (aarch64, ubuntu-24.04-arm, fedora:latest, rpm)",
+          "startedAt": "2026-10-16T16:32:00Z",
+          "status": "COMPLETED",
+          "workflowName": "build"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-16T16:35:10Z",
+          "conclusion": "SKIPPED",
+          "detailsUrl": "https://github.com/kmplngj/m-flasher/actions/runs/38932215405/job/117081768970",
+          "name": "release",
+          "startedAt": "2026-10-16T16:35:11Z",
+          "status": "COMPLETED",
+          "workflowName": "build"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-16T16:35:30Z",
+          "conclusion": "SKIPPED",
+          "detailsUrl": "https://github.com/kmplngj/m-flasher/actions/runs/38932206422/job/117081911876",
+          "name": "release",
+          "startedAt": "2026-10-16T16:35:30Z",
+          "status": "COMPLETED",
+          "workflowName": "build"
+        },
+        {
+          "__typename": "StatusContext",
+          "context": "CodeRabbit",
+          "startedAt": "2026-10-16T16:28:36Z",
+          "state": "SUCCESS",
+          "targetUrl": ""
+        }
+      ],
+      "url": "https://github.com/kmplngj/m-flasher/pull/24"
+    }
+  ]
+}
