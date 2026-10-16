@@ -27,8 +27,8 @@ def entry(name, address, length, attr, crc=0):
     pack_into('<H', out, 0, crc_hqx(out[2:], 0))
     return out
 
-def raw(vm=0x93000):
-    out = bytearray(b'\xff' * 0x5000)
+def raw(vm=0x93000, app_payload=b'offset-oracle-240\0', size=0x5000):
+    out = bytearray(b'\xff' * size)
     head = bytearray(32)
     pack_into('<H', head, 0, crc_hqx(head[2:], 0))
     out[:32] = enc(head)
@@ -41,14 +41,16 @@ def raw(vm=0x93000):
     boot.extend(payload)
     out[0x20:0x40] = enc(entry('uboot.boot', 0xa0, len(boot), 0x82, crc_hqx(boot, 0)))
     out[0xa0:0xa0+len(boot)] = enc(boot[:16]) + enc(boot[16:])
-    payload = b'offset-oracle-240\0'
+    payload = app_payload
     entries = [entry('app.bin', 0x240, len(payload), 0x82, crc_hqx(payload, 0)),
                entry('VM', vm, 0xE9000-vm, 0x12),
                entry('BTIF', 0xE9000, 0x1000, 0x12),
                entry('USR', 0xEA000, 0x12000, 0x12)]
     for i, e in enumerate(entries):
         out[0x4000+32*i:0x4020+32*i] = enc(e, 0x980f ^ (i*8))
-    out[0x4240:0x4260] = enc(payload.ljust(32, b'\0'), 0x980f ^ (0x240 >> 2))
+    padded = payload + b'\0' * ((-len(payload)) % 32)
+    for offset in range(0, len(padded), 32):
+        out[0x4240+offset:0x4260+offset] = enc(padded[offset:offset+32], 0x980f ^ ((0x240+offset) >> 2))
     return out
 
 def package(flash, malformed=None):
@@ -117,3 +119,5 @@ if __name__ == '__main__':
     absent_plain = enc(b'\xff'*32, 0x980f ^ (0x8000 >> 2))[:17]
     missing[0x4000:0x4020] = enc(entry('app.bin', 0x8000, 17, 0x82, crc_hqx(absent_plain, 0)), 0x980f)
     (ROOT/'missing-app.fwsc').write_bytes(wire_package(missing))
+
+    (ROOT/'incident.raw').write_bytes(raw(app_payload=b'OLD-APP-SECTOR!'.ljust(0x3000, b'\xa1'), size=0x8000))

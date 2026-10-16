@@ -95,7 +95,11 @@ reference. No private firmware is included. App CRC damage, unknown layout,
 truncation, overlap/overflow, auxiliary package payload CRCs, duplicate package
 names, receipt ambiguity, incompatible declarations and incident-shaped mixed
 sectors are exercised. Support output is checked against secret canaries and
-must retain unknown USB/bootability/fresh-acquisition limits.
+must retain unknown USB/bootability/fresh-acquisition limits. The incident oracle
+has a multi-sector valid APP before mutation; mixed old/new APP sectors retain
+an intact boot container plus inert staged-loader/update markers, and diagnose
+app corruption without claiming a demonstrated resume path. The Unix filesystem
+substitution test uses the system `mkfifo` utility; it installs nothing.
 
 The full guarded Cargo pass also exercises the actual offline CLI dispatch,
 reference mismatch exit codes, protected writer/reader receipt interoperability,

@@ -40,11 +40,20 @@ fn corrupt_app_does_not_invalidate_full_saved_acquisition_or_erase_regions() {
 }
 #[test]
 fn saved_mixed_sectors_intact_head_and_staged_marker_do_not_prove_resume() {
-    let mut flash = full();
-    flash[0x5000..0x6000].fill(0xA1); // old/staged sector
-    flash[0x6000..0x7000].fill(0xB2); // new sector
-    flash[0x7000..0x7010].copy_from_slice(b"UPDATE-RECORD-OK");
+    let mut flash = include_bytes!("../fixtures/saved/incident.raw").to_vec();
+    flash.resize(FLASH_SIZE, 0xFF);
+    assert_eq!(SavedAnalysis::raw(&flash).unwrap().recovery, RecoveryState::IntactApp);
+    // Keep the independently generated old APP sector at 0x5000, but replace
+    // the next APP sector with new bytes. Head/directory remain intact.
+    let old_sector = flash[0x5000..0x6000].to_vec();
+    flash[0x6000..0x7000].fill(0xB2);
+    flash[0x8000..0x8010].copy_from_slice(b"STAGED-LOADER-OK");
+    flash[0x9000..0x9010].copy_from_slice(b"UPDATE-RECORD-OK");
+    assert_eq!(&flash[0x5000..0x6000], &old_sector);
     let saved = SavedAnalysis::raw(&flash).unwrap();
+    assert_eq!(saved.recovery, RecoveryState::CorruptApp);
+    assert_eq!(saved.analysis.bootloader, BootKind::Stock);
+    assert!(saved.layout_valid);
     let report = saved.support_json(flash.len(), "raw", "not-requested", "not-supplied", "computed-only-no-authenticated-reference", "unknown");
     assert!(report.contains("no-known-route-from-saved-bytes"));
     assert!(report.contains("not-demonstrated"));
