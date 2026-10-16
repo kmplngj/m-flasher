@@ -6,15 +6,14 @@
   "baseline_commit": "9d962747437d92cbab594c2320b586d162c6572d",
   "publication_verification": {
     "count": 19,
-    "method": "GET reread and exact title/body SHA-256 comparison after full research/coverage reconciliation on 2026-10-16.",
+    "method": "GET reread and exact title/body SHA-256 comparison after full research/coverage reconciliation on 2026-10-16. This is a publication snapshot; subsequent issue updates are recorded on GitHub.",
     "duplicates": false
   },
   "candidate_status": {
     "minimal_ram_reader": "Implemented locally on init; two byte-identical offline builds, hosted ASan/UBSan fake-core/MMIO tests, 37 artifact mutation tests and independent static review pass. Source unpublished; no strict runtime integration or physical qualification.",
     "strict_runtime_integration": false,
     "physical_qualification": false,
-    "development_hardware_access": false,
-    "build_report": "fm1-m1-offline-build.md"
+    "development_hardware_access": false
   },
   "disposition_counts": {
     "already-parity": 2,
