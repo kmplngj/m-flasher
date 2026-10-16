@@ -6,6 +6,7 @@
 #![cfg_attr(windows, windows_subsystem = "windows")]
 
 mod boards;
+mod backup_files;
 mod cli;
 mod controller;
 mod fonts;

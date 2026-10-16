@@ -240,7 +240,6 @@ impl<F: Flash> Session<F> {
         let stamp = chrono::Local::now().format("%Y%m%d-%H%M%S").to_string();
         let model = self.board().map(|b| b.key).unwrap_or("unknown");
         let path = dir.join(format!("{model}-{stamp}.bin"));
-        std::fs::write(&path, &self.flash).map_err(|e| Error::Io(format!("cannot write {}: {e}", path.display())))?;
         let mut json = String::from("{\n");
         for (k, v) in self.info() {
             json += &format!("  \"{k}\": \"{}\",\n", v.replace('\\', "\\\\").replace('"', "\\\""));
@@ -248,7 +247,8 @@ impl<F: Flash> Session<F> {
         let sha: String = Sha256::digest(&self.flash).iter().map(|b| format!("{b:02x}")).collect();
         json += &format!("  \"sha256\": \"{sha}\",\n");
         json += &format!("  \"saved\": \"{stamp}\",\n  \"tool\": \"m-flasher {}\"\n}}\n", env!("CARGO_PKG_VERSION"));
-        std::fs::write(path.with_extension("json"), json).map_err(|e| Error::Io(e.to_string()))?;
+        crate::backup_files::save_pair(&path, &self.flash, json.as_bytes())
+            .map_err(|e| Error::Io(format!("cannot save backup pair {}: {e}; incomplete new files may remain", path.display())))?;
         give_to_sudo_user(&path);
         give_to_sudo_user(&path.with_extension("json"));
         self.backup_path = Some(path.clone());
