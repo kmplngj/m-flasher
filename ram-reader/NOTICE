@@ -1,0 +1,20 @@
+fm1-bootloader
+Bootloader for JieLi AC791N devices, derived from a C reconstruction of the
+JieLi AC79 SDK 1.1.9 bootloader (uboot.boot).
+Licensed under the Apache License 2.0; see LICENSE.
+
+This product includes a decoder derived from LZ4 (src/lz4.c), via JieLi's
+lib/common/lz4.c:
+
+   LZ4 - Fast LZ compression algorithm
+   Copyright (C) 2011-2017, Yann Collet.
+   BSD 2-Clause License (http://www.opensource.org/licenses/bsd-license.php)
+
+The full license text is reproduced in src/lz4.c above the decoder.
+
+FM-1 minimal read-only RAM reader (FMR1)
+Derived SPI/ROM ABI/register patterns from M-Flasher loader/ at
+9d962747437d92cbab594c2320b586d162c6572d, Copyright (c)2026 Julius Vitkauskas.
+Modified2026-10-16: fixed256-byte raw reads, no erase/program/status/clock/display/
+efuse/CRC functions; explicit state, strict command bounds and finite SPI polls.
+The LZ4 decoder mentioned in the upstream notice is not included in this component.

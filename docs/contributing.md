@@ -27,10 +27,10 @@ result when publication is outside the request.
 Read the offline boundary in `AGENTS.md` and the selected issue before running
 checks. `docs/development.md` describes the existing host build and tests;
 inspect the relevant test/build path for device access before execution.
-Use injected fakes and saved fixtures. Target artifact builds are excluded in
-this baseline. Issue #3 will introduce the selected RAM reader's reviewed build
-contract and narrow exception together with its source. Host-native fake
-harnesses and file-parser tests validate only the stated offline behavior.
+Use injected fakes and saved fixtures. The only target artifact build exception
+is the selected RAM reader under `ram-reader/README.md`, using existing locked
+tools and a cached, network-disabled container without devices. Host-native
+fake harnesses and file-parser tests validate only the stated offline behavior.
 
 Preserve upstream firmware, bundled images, pins and notices. Physical tests
 need a separate authorized task with operation-specific gates. The sole owner FM-1
