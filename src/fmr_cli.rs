@@ -35,29 +35,7 @@ fn execute(args: &[String]) -> Result<(), String> {
         Command::Prepare(options) => (options, false),
         Command::Run(options) => (options, true),
     };
-    let metadata =
-        fs::symlink_metadata(&options.reader).map_err(|e| format!("reader image: {e}"))?;
-    if !metadata.is_file() {
-        return Err("reader must be a regular file, not a symlink or special file".into());
-    }
-    let mut open = OpenOptions::new();
-    open.read(true);
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::OpenOptionsExt;
-        open.custom_flags(libc::O_NOFOLLOW | libc::O_NONBLOCK);
-    }
-    let file = open
-        .open(&options.reader)
-        .map_err(|e| format!("reader image: {e}"))?;
-    if !file.metadata().map_err(|e| e.to_string())?.is_file() {
-        return Err("reader must be a regular file".into());
-    }
-    let mut bytes = Vec::new();
-    file.take((IMAGE_LEN + 1) as u64)
-        .read_to_end(&mut bytes)
-        .map_err(|e| e.to_string())?;
-    let image = Image::verify(bytes)?;
+    let image = load_image(&options.reader)?;
     if options.output.try_exists().map_err(|e| e.to_string())? {
         return Err("output directory must be new".into());
     }
@@ -69,6 +47,29 @@ fn execute(args: &[String]) -> Result<(), String> {
         return Ok(());
     }
     run_selected(options, image)
+}
+
+pub(crate) fn load_image(path: &Path) -> Result<Image, String> {
+    let metadata = fs::symlink_metadata(path).map_err(|e| format!("reader image: {e}"))?;
+    if !metadata.is_file() {
+        return Err("reader must be a regular file, not a symlink or special file".into());
+    }
+    let mut open = OpenOptions::new();
+    open.read(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        open.custom_flags(libc::O_NOFOLLOW | libc::O_NONBLOCK);
+    }
+    let file = open.open(path).map_err(|e| format!("reader image: {e}"))?;
+    if !file.metadata().map_err(|e| e.to_string())?.is_file() {
+        return Err("reader must be a regular file".into());
+    }
+    let mut bytes = Vec::new();
+    file.take((IMAGE_LEN + 1) as u64)
+        .read_to_end(&mut bytes)
+        .map_err(|e| e.to_string())?;
+    Image::verify(bytes)
 }
 
 #[cfg(all(
@@ -186,7 +187,7 @@ fn run_selected(_options: Options, _image: Image) -> Result<(), String> {
     Err("native reader is unavailable in this build; tests/offline-tests never contain a real reader adapter".into())
 }
 
-fn quote(value: &str) -> String {
+pub(crate) fn quote(value: &str) -> String {
     let mut quoted = String::from("\"");
     for character in value.chars() {
         match character {

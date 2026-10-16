@@ -30,6 +30,8 @@ pub const USB_HELPER: &str = "--usb-helper";
 /// cannot inventory units, open arbitrary paths or execute generic commands.
 #[cfg(feature = "reader-qualification")]
 pub const FMR_HELPER: &str = "--fmr-reader-helper";
+#[cfg(feature = "reader-qualification")]
+pub const FMR_BACKUP_HELPER: &str = "--fmr-backup-helper";
 
 const FIND: u8 = 1;
 const OPEN: u8 = 2;
@@ -214,6 +216,96 @@ pub fn reader_check(
         second: response.second,
         binding: response.binding,
     })
+}
+
+/// Two-phase, fixed full capture. The dedicated helper retains the sole device
+/// owner while the unprivileged client syncs/reopens its preflighted files.
+/// Only a matching storage acknowledgement permits final reader checkpoints.
+#[cfg(feature = "reader-qualification")]
+pub fn reader_backup<F: FnOnce(&crate::fmr_full::Capture, &str) -> Result<(), String>>(
+    selection: &crate::fmr_native::Selection,
+    image: crate::fmr_bootstrap::Image,
+    persist: F,
+) -> Result<(crate::fmr_full::Capture, String), String> {
+    use crate::fmr_backup_ipc as ipc;
+    let request = ipc::encode_request(&ipc::Request {
+        location: selection.location,
+        device: selection.device.clone(),
+        serial: selection.serial.clone(),
+        image: image.as_bytes().to_vec(),
+    })?;
+    if is_root() {
+        return crate::fmr_backup_cli::physical_full_selected(
+            crate::fmr_native::Selection {
+                device: selection.device.clone(),
+                location: selection.location,
+                serial: selection.serial.clone(),
+            },
+            image,
+            std::time::Instant::now(),
+            None,
+            persist,
+        );
+    }
+    let helper = Helper::start_with_flag(
+        FMR_BACKUP_HELPER,
+        c"M-Flasher needs administrator rights for one selected read-only full FMR1 backup.",
+    )
+    .map_err(|error| error.to_string())?;
+    let mut pipe = crate::fmr_backup_pipe::Pipe::duplex(helper.pipe)?;
+    pipe.write_all(&(request.len() as u32).to_le_bytes())?;
+    pipe.write_all(&request)?;
+    crate::fmr_backup_exchange::receive(&mut pipe, persist)
+}
+
+/// No path, arbitrary CDB, range, writer, reset or legacy dispatcher is exposed.
+#[cfg(feature = "reader-qualification")]
+pub fn backup_helper() -> i32 {
+    use crate::fmr_backup_ipc as ipc;
+    use sha2::{Digest, Sha256};
+    let mut pipe = match crate::fmr_backup_pipe::Pipe::stdio() {
+        Ok(pipe) => pipe,
+        Err(_) => return 1,
+    };
+    let result: Result<[u8; 32], String> = (|| {
+        let mut prefix = [0u8; 4];
+        pipe.read_exact(&mut prefix)?;
+        if u32::from_le_bytes(prefix) as usize != ipc::REQUEST_LEN {
+            return Err("FMR1 full backup request exceeds fixed length".into());
+        }
+        let mut frame = [0u8; ipc::REQUEST_LEN];
+        pipe.read_exact(&mut frame)?;
+        let request = ipc::decode_request(&frame)?;
+        let image = crate::fmr_bootstrap::Image::verify(request.image)?;
+        let started = pipe.started;
+        let cancellation_fd = pipe.input_fd();
+        let (capture, _binding) = crate::fmr_backup_cli::physical_full_selected(
+            crate::fmr_native::Selection {
+                device: request.device,
+                location: request.location,
+                serial: request.serial,
+            },
+            image,
+            started,
+            Some(cancellation_fd),
+            |capture, binding| crate::fmr_backup_exchange::publish(&mut pipe, capture, binding),
+        )?;
+        let mut digest = [0u8; 32];
+        digest.copy_from_slice(&Sha256::digest(&capture.first));
+        Ok(digest)
+    })();
+    let (status, payload) = match result {
+        Ok(digest) => (ipc::FINISHED, digest.to_vec()),
+        Err(error) => (ipc::FAILED, error.into_bytes()),
+    };
+    if pipe
+        .write_frame(status, &payload, ipc::MAX_BINDING_LEN)
+        .is_err()
+    {
+        1
+    } else {
+        0
+    }
 }
 
 pub enum Device {
