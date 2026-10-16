@@ -13,6 +13,8 @@ mod formats;
 mod jl;
 mod ops;
 mod scsi;
+#[cfg(any(test, target_os = "macos", all(target_os = "linux", feature = "usb")))]
+mod usb_cbw;
 mod sectormap;
 #[cfg(test)]
 mod tests;
