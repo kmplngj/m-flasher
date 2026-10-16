@@ -174,9 +174,7 @@ mod tests {
     #[test]
     #[cfg(any(target_os = "linux", target_os = "macos"))]
     fn regular_file_open_flags_match_platform_abi() {
-        #[cfg(target_os = "linux")] let flags = 0x20000 | 0x800;
-        #[cfg(target_os = "macos")] let flags = 0x100 | 0x4;
-        assert_eq!(flags, libc::O_NOFOLLOW | libc::O_NONBLOCK);
+        assert_eq!(crate::saved_files::READ_FLAGS, libc::O_NOFOLLOW | libc::O_NONBLOCK);
     }
     #[test]
     fn errors_omit_paths_contents_hashes_and_invalid_flags() {

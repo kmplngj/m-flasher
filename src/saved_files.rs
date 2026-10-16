@@ -4,10 +4,13 @@ use std::io::Read;
 use std::path::Path;
 // Host ABI constants are kept here so the canonical std-only harness need not
 // resolve/link libc. The Cargo tests assert they match the supported host libc.
-#[cfg(target_os = "linux")]
-const READ_FLAGS: i32 = 0x20000 | 0x800; // O_NOFOLLOW | O_NONBLOCK
+#[cfg(all(target_os = "linux", not(any(target_arch = "arm", target_arch = "aarch64"))))]
+pub(crate) const READ_FLAGS: i32 = 0x20000 | 0x800; // O_NOFOLLOW | O_NONBLOCK
+// Linux ARM retains a different O_NOFOLLOW ABI from x86/x86_64.
+#[cfg(all(target_os = "linux", any(target_arch = "arm", target_arch = "aarch64")))]
+pub(crate) const READ_FLAGS: i32 = 0x8000 | 0x800;
 #[cfg(target_os = "macos")]
-const READ_FLAGS: i32 = 0x100 | 0x4; // O_NOFOLLOW | O_NONBLOCK
+pub(crate) const READ_FLAGS: i32 = 0x100 | 0x4; // O_NOFOLLOW | O_NONBLOCK
 
 pub fn read(path: &Path, limit: usize) -> Result<Vec<u8>, &'static str> {
     read_with_hook(path, limit, || {})
