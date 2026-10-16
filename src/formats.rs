@@ -186,6 +186,15 @@ pub fn app_table(flash: &[u8], key: u16) -> Vec<Entry> {
     out
 }
 
+/// APP file bytes must be present in the stored representation. Logical
+/// package padding may describe omitted data regions, never supply app bytes.
+pub fn app_files_present(flash: &[u8], key: u16) -> bool {
+    let table = app_table(flash, key);
+    table.iter().any(|e| e.attr == 0x82 && e.name == "app.bin")
+        && table.iter().filter(|e| e.attr == 0x82).all(|e| e.len > 0
+            && BOOT_AREA as u64 + e.addr as u64 + e.len as u64 <= flash.len() as u64)
+}
+
 /// Validate file/region bounds and overlaps without depending on valid app bytes.
 /// PRCT describes a protection envelope, so it is not a stored-data allocation.
 pub fn app_layout_valid(flash: &[u8], key: u16) -> bool {

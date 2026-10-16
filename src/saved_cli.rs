@@ -110,8 +110,22 @@ mod tests {
         let dry = execute(&files.options("dry-plan", &raw, &[&pkg, "--support"])).unwrap().0;
         assert!(dry.contains("\"candidate_sectors\":0"));
         assert!(dry.contains("advisory-only-no-execution"));
+        let mut damaged = flash.clone(); damaged[0x4240] ^= 1;
+        let damaged_path = files.put("damaged.raw", &damaged);
+        let (changed, success) = execute(&files.options("dry-plan", &damaged_path, &[&pkg, "--support"])).unwrap();
+        assert!(success); assert!(changed.contains("\"candidate_sectors\":1"));
+        let analysis = SavedAnalysis::raw(&damaged).unwrap();
+        let plan = crate::ops::plan_firmware_saved(&damaged, &analysis.analysis,
+            &crate::boards::FM1, CHIP_KEY, include_bytes!("../tests/fixtures/saved/valid.fwsc"), false, false).unwrap();
+        assert_eq!(&plan.target[..0x4000], &damaged[..0x4000]);
+        assert_eq!(&plan.target[0x5000..], &damaged[0x5000..]);
+        assert_eq!(plan.sectors, vec![0x4000]);
         // Full offline guarded tests compile native adapters out. Their inventory
         // entrypoint panics: reaching it here fails this test immediately.
+    }
+    #[test]
+    fn sha256_matches_independent_hashlib_vector() {
+        assert_eq!(sha256(b"123456789"), "15e2b0d3c33891ebb0f1ef609ec419420c20e320ce94c65fbc8c3312448eb225");
     }
     #[test]
     fn integrity_references_and_sanitized_failure_results_are_exact() {
@@ -147,6 +161,12 @@ mod tests {
         let pkg = files.put("incompatible.fwsc", include_bytes!("../tests/fixtures/saved/incompatible.fwsc"));
         let (report, success) = execute(&files.options("dry-plan", &raw, &[&pkg, "--support"])).unwrap();
         assert!(!success); assert!(report.contains("incompatible-data-layout")); assert!(report.contains("blocked-unqualified-data-compatibility"));
+        let missing = files.put("missing-app.fwsc", include_bytes!("../tests/fixtures/saved/missing-app.fwsc"));
+        let (report, success) = execute(&files.options("dry-plan", &raw, &[&missing, "--support"])).unwrap();
+        assert!(!success); assert!(report.contains("blocked-unknown-or-corrupt-layout"));
+        assert!(crate::ops::plan_firmware_saved(&crate::saved_analysis_tests::full(),
+            &SavedAnalysis::raw(&crate::saved_analysis_tests::full()).unwrap().analysis, &crate::boards::FM1,
+            CHIP_KEY, include_bytes!("../tests/fixtures/saved/missing-app.fwsc"), false, false).is_err());
         let unknown = files.put("unknown.raw", &vec![0xFF; FLASH_SIZE]);
         let (report, success) = execute(&files.options("dry-plan", &unknown, &[&pkg, "--support"])).unwrap();
         assert!(!success); assert!(report.contains("blocked-unknown-or-corrupt-layout"));

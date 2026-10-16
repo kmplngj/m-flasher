@@ -139,3 +139,15 @@ fn support_export_is_allowlisted_and_has_no_secrets_or_optimistic_recovery() {
     for forbidden in ["PRIVATE", "offset-oracle", "FM-1_015", "0x980", "sha256", "serial", "provenance", "returned_to_stock", "resume-state-intact"] { assert!(!report.contains(forbidden)); }
     for required in ["intact-app-checksums", "no-known-route-from-saved-bytes", "not-demonstrated", "\"automatic_action\":\"none\"", "\"actual_device_capacity\":\"unknown\""] { assert!(report.contains(required)); }
 }
+
+#[test]
+fn package_padding_cannot_supply_missing_application_bytes() {
+    let (package, saved) = SavedAnalysis::package(include_bytes!("../fixtures/saved/missing-app.fwsc")).unwrap();
+    // The independent fixture's app CRC deliberately matches erased logical
+    // padding. Its valid package payload CRC is not proof those app bytes exist.
+    let mut logical = package.flash.clone(); logical.resize(FLASH_SIZE, 0xFF);
+    assert_eq!(formats::app_files_status(&logical, 0x980F), AppStatus::Ok);
+    assert!(!formats::app_files_present(&package.flash, 0x980F));
+    assert_eq!(saved.recovery, RecoveryState::CorruptApp);
+    assert!(saved.layout_valid); // declared data/address geometry remains known
+}

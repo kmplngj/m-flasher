@@ -26,7 +26,9 @@ uses the same representation for both files and compares every saved byte,
 including any tail/factory bytes and package auxiliary payloads. The raw file is
 never automatically treated as a package or padded. Package analysis alone pads
 its embedded flash with erased bytes to interpret declared regions outside the
-package; these padding bytes are not saved or acquired data.
+package; these padding bytes are not saved or acquired data. Application files
+must still be fully contained in the actual embedded flash payload. Even a
+crafted CRC matching erased padding cannot make missing app bytes intact.
 
 `inspect` calculates a SHA-256, reports saved size and parses known structures.
 `verify` additionally requires an expected SHA-256, another file, or a receipt.

@@ -61,7 +61,11 @@ impl SavedAnalysis {
         // an analysis convention, never evidence of acquisition of those bytes.
         let mut logical = package.flash.clone();
         logical.resize(FLASH_SIZE, 0xFF);
-        let saved = Self::raw(&logical)?;
+        let mut saved = Self::raw(&logical)?;
+        if !crate::formats::app_files_present(&package.flash, CHIP_KEY) {
+            saved.analysis.app_status = AppStatus::BadCrc;
+            saved.recovery = RecoveryState::CorruptApp;
+        }
         Ok((package, saved))
     }
 

@@ -111,3 +111,9 @@ if __name__ == '__main__':
         index = 1 if kind == 'overlap' else 0
         table[32*index:32*(index+1)] = enc(entry(*values), 0x980f ^ (index*8))
         (ROOT/(kind+'.table')).write_bytes(table)
+
+    missing = bytearray(base)
+    # Its CRC deliberately matches what erased logical padding decrypts to.
+    absent_plain = enc(b'\xff'*32, 0x980f ^ (0x8000 >> 2))[:17]
+    missing[0x4000:0x4020] = enc(entry('app.bin', 0x8000, 17, 0x82, crc_hqx(absent_plain, 0)), 0x980f)
+    (ROOT/'missing-app.fwsc').write_bytes(wire_package(missing))

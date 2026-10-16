@@ -463,6 +463,9 @@ pub fn plan_firmware_saved(current: &[u8], analysis: &Analysis, board: &Board, k
     if pkg.flash.len() > FLASH_SIZE {
         return refuse("the package is larger than the flash");
     }
+    if !crate::formats::app_files_present(&pkg.flash, key) {
+        return refuse("the package does not contain all declared app file bytes");
+    }
     let mut padded = pkg.flash.clone();
     padded.resize(FLASH_SIZE, 0xFF);
     if app_files_status(&padded, key) != AppStatus::Ok {
