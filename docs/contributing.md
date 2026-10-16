@@ -25,8 +25,9 @@ result when publication is outside the request.
 ## Validate and review
 
 Read the offline boundary in `AGENTS.md` and the selected issue before running
-checks. `docs/development.md` describes the existing host build and tests;
-inspect the relevant test/build path for device access before execution.
+checks. Start host validation with `python3 tools/run_offline_tests.py`;
+`docs/offline-tests.md` defines the guard, optional Cargo/corpus checks and
+honest missing-cache results. Inspect other test/build paths before execution.
 Use injected fakes and saved fixtures. Target artifact builds are excluded in
 this baseline. Issue #3 will introduce the selected RAM reader's reviewed build
 contract and narrow exception together with its source. Host-native fake

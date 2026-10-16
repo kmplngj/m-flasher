@@ -30,6 +30,9 @@
 - Add tests around observable behavior and failure boundaries with independent
   fixtures. Before running a check, establish that it stays offline; an
   application build or passing test does not establish device safety.
+- For host validation, run `python3 tools/run_offline_tests.py` first. Read
+  `docs/offline-tests.md` before the optional Cargo/corpus checks. Missing
+  cached dependencies remain a reported local limit; the runner never fetches.
 - Record exact commands, results and material limits. Separate local,
   committed, pushed, merged, offline-validated, hardware-qualified and released
   states; identify the exact artifact for any qualification claim.
