@@ -1,0 +1,74 @@
+[
+  {
+    "baseRefName": "main",
+    "baseRefOid": "9d962747437d92cbab594c2320b586d162c6572d",
+    "files": [
+      {
+        "path": "src/usb.rs",
+        "additions": 10,
+        "deletions": 4,
+        "changeType": "MODIFIED"
+      },
+      {
+        "path": "src/usb_data_in.rs",
+        "additions": 179,
+        "deletions": 0,
+        "changeType": "ADDED"
+      }
+    ],
+    "headRefName": "kori/4-upstream-exact-flash-reads",
+    "headRefOid": "f7086b370f474fe22795edf7de3561f6d64e72fe",
+    "isDraft": false,
+    "number": 8,
+    "state": "OPEN",
+    "statusCheckRollup": [],
+    "url": "https://github.com/jvitkauskas/m-flasher/pull/8",
+    "upstreamWorkflow": {
+      "id": 38936309207,
+      "status": "completed",
+      "conclusion": "action_required",
+      "html_url": "https://github.com/jvitkauskas/m-flasher/actions/runs/38936309207",
+      "event": "pull_request",
+      "head_sha": "f7086b370f474fe22795edf7de3561f6d64e72fe"
+    }
+  },
+  {
+    "baseRefName": "main",
+    "baseRefOid": "9d962747437d92cbab594c2320b586d162c6572d",
+    "files": [
+      {
+        "path": "src/backup_files.rs",
+        "additions": 303,
+        "deletions": 0,
+        "changeType": "ADDED"
+      },
+      {
+        "path": "src/main.rs",
+        "additions": 1,
+        "deletions": 0,
+        "changeType": "MODIFIED"
+      },
+      {
+        "path": "src/ops.rs",
+        "additions": 2,
+        "deletions": 2,
+        "changeType": "MODIFIED"
+      }
+    ],
+    "headRefName": "kori/10-upstream-exclusive-backups",
+    "headRefOid": "9613b66ec860c2c412b099e7193d1211e0785d78",
+    "isDraft": false,
+    "number": 9,
+    "state": "OPEN",
+    "statusCheckRollup": [],
+    "url": "https://github.com/jvitkauskas/m-flasher/pull/9",
+    "upstreamWorkflow": {
+      "id": 38936332451,
+      "status": "completed",
+      "conclusion": "action_required",
+      "html_url": "https://github.com/jvitkauskas/m-flasher/actions/runs/38936332451",
+      "event": "pull_request",
+      "head_sha": "9613b66ec860c2c412b099e7193d1211e0785d78"
+    }
+  }
+]
