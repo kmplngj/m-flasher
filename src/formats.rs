@@ -126,7 +126,8 @@ impl Entry {
 }
 
 pub fn flash_header_valid(flash: &[u8]) -> bool {
-    let h = enc(&flash[..32], 0xFFFF);
+    let Some(header) = flash.get(..32) else { return false };
+    let h = enc(header, 0xFFFF);
     crc16(&h[2..]) == u16le(&h, 0)
 }
 
@@ -149,15 +150,19 @@ pub fn boot_table(flash: &[u8]) -> Vec<Entry> {
 
 /// n plain bytes at offset off of the app area at base.
 pub fn app_read(flash: &[u8], base: usize, off: usize, n: usize, key: u16) -> Vec<u8> {
-    let mut out = Vec::with_capacity(n + 64);
+    let Some(end) = off.checked_add(n) else { return vec![] };
+    let Some(start) = base.checked_add(off) else { return vec![] };
+    if start >= flash.len() { return vec![]; }
+    // An untrusted length must never drive an allocation beyond saved bytes.
+    let available = n.min(flash.len() - start);
+    let mut out = Vec::with_capacity(available.saturating_add(32));
     let mut a = off - off % 32;
-    while a < off + n {
-        let start = base + a;
-        if start + 32 > flash.len() {
-            break;
-        }
-        out.extend(enc(&flash[start..start + 32], key ^ ((a >> 2) as u16)));
-        a += 32;
+    while a < end {
+        let Some(start) = base.checked_add(a) else { break };
+        let Some(block) = flash.get(start..).and_then(|b| b.get(..32)) else { break };
+        out.extend(enc(block, key ^ ((a >> 2) as u16)));
+        let Some(next) = a.checked_add(32) else { break };
+        a = next;
     }
     let s = off % 32;
     out.into_iter().skip(s).take(n).collect()
@@ -179,6 +184,29 @@ pub fn app_table(flash: &[u8], key: u16) -> Vec<Entry> {
         out.push(e);
     }
     out
+}
+
+/// Validate file/region bounds and overlaps without depending on valid app bytes.
+/// PRCT describes a protection envelope, so it is not a stored-data allocation.
+pub fn app_layout_valid(flash: &[u8], key: u16) -> bool {
+    let table = app_table(flash, key);
+    if table.is_empty() { return false; }
+    let directory_end = BOOT_AREA + table.len() * 32;
+    let mut spans = vec![];
+    for e in &table {
+        let start = match e.attr {
+            0x82 => BOOT_AREA as u64 + e.addr as u64,
+            0x12 | 0x92 if e.name != "PRCT" => e.addr as u64,
+            _ => continue,
+        };
+        let end = start + e.len as u64;
+        if e.len == 0 || start < directory_end as u64 || end > flash.len() as u64
+            || spans.iter().any(|&(a, b)| start < b && a < end) {
+            return false;
+        }
+        spans.push((start, end));
+    }
+    true
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -208,15 +236,18 @@ pub fn app_files_status(flash: &[u8], key: u16) -> AppStatus {
     if files.is_empty() {
         return AppStatus::NotFound;
     }
+    if !app_layout_valid(flash, key) { return AppStatus::BadCrc; }
     for e in files {
         let (start, end) = (BOOT_AREA + e.addr as usize, BOOT_AREA + e.addr as usize + e.len as usize);
-        if end > flash.len() {
+        if e.len == 0 || end > flash.len() {
             return AppStatus::BadCrc;
         }
-        if crc16(&app_read(flash, BOOT_AREA, e.addr as usize, e.len as usize, key)) != e.data_crc {
+        let plain = app_read(flash, BOOT_AREA, e.addr as usize, e.len as usize, key);
+        if plain.len() != e.len as usize { return AppStatus::BadCrc; }
+        if crc16(&plain) != e.data_crc {
             let mut s = start - start % SECTOR;
             while s < end {
-                if flash[s..s + SECTOR].iter().all(|&b| b == 0xFF) {
+                if flash.get(s..s + SECTOR).is_some_and(|sector| sector.iter().all(|&b| b == 0xFF)) {
                     return AppStatus::Incomplete;
                 }
                 s += SECTOR;
@@ -236,7 +267,9 @@ pub fn bankcb_check(boot: &[u8]) -> Result<&[u8], FormatError> {
     }
     let (bank, size, offset, pcrc, hcrc) =
         (u16le(boot, 0), u16le(boot, 2) as usize, u32le(boot, 8) as usize, u16le(boot, 12), u16le(boot, 14));
-    let ok = bank == 1 && crc16(&boot[..14]) == hcrc && offset + size <= boot.len();
+    let end = offset.checked_add(size);
+    let ok = bank == 1 && offset >= 16 && size > 0 && crc16(&boot[..14]) == hcrc
+        && end.is_some_and(|end| end <= boot.len());
     if !ok || crc16(&boot[offset..offset + size]) != pcrc {
         return err("not a valid bootloader container (BANKCB)");
     }
@@ -302,6 +335,7 @@ pub fn build_boot_area(flash: &[u8], boot: &[u8]) -> Result<Vec<u8>, FormatError
 
 // ---- .fwsc packages ----
 
+pub const MAX_PACKAGE_SIZE: usize = 16 * 1024 * 1024;
 const FWSC_BLOCK: usize = 0x30;
 const FWSC_KEEP: usize = 0x2F;
 
@@ -324,7 +358,7 @@ pub struct Package {
 impl Package {
     pub fn parse(raw: &[u8]) -> Result<Package, FormatError> {
         let bad = || FormatError("not a firmware package (.fwsc)".into());
-        if raw.len() < 0x1000 {
+        if raw.len() < 0x1000 || raw.len() > MAX_PACKAGE_SIZE {
             return Err(bad());
         }
         let mut n = 0;
@@ -340,7 +374,7 @@ impl Package {
             if m == 0x7D {
                 break;
             }
-            identity.push(m.wrapping_sub(i as u8 + 1) as char);
+            identity.push(m.wrapping_sub((i as u8).wrapping_add(1)) as char);
         }
         let mut image = Vec::with_capacity(raw.len());
         for i in 0..n {
@@ -360,13 +394,28 @@ impl Package {
             return err("damaged firmware package (file list CRC)");
         }
         let mut files = BTreeMap::new();
+        let mut spans = BTreeMap::<usize, usize>::new();
         for i in 0..count {
             let e = enc(&list[i * 0x50..(i + 1) * 0x50], 0xFFFF);
             let (typ, dcrc, off, size) = (u16le(&e, 0), u16le(&e, 4), u32le(&e, 8) as usize, u32le(&e, 12) as usize);
-            if off + size > image.len() {
+            let end = off.checked_add(size).ok_or_else(bad)?;
+            if off < 0x40 + 0x50 * count || end > image.len() {
                 return err("damaged firmware package (file outside the image)");
             }
-            files.insert(cstr(&e[0x40..]), (typ, dcrc, image[off..off + size].to_vec()));
+            if size > 0 && (spans.range(..=off).next_back().is_some_and(|(_, &b)| b > off)
+                || spans.range(off..).next().is_some_and(|(&a, _)| a < end)) {
+                return err("damaged firmware package (overlapping files)");
+            }
+            if size > 0 { spans.insert(off, end); }
+            let name = cstr(&e[0x40..]);
+            if files.contains_key(&name) {
+                return err("damaged firmware package (duplicate file)");
+            }
+            // All payloads matter to saved-package integrity, not just flash.bin.
+            if crc16(&image[off..end]) != dcrc {
+                return err("damaged firmware package (payload CRC)");
+            }
+            files.insert(name, (typ, dcrc, image[off..end].to_vec()));
         }
         let flash = match files.get("flash.bin") {
             Some((0, dcrc, data)) => {

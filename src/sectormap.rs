@@ -75,7 +75,7 @@ pub fn sector_map(flash: &[u8], key: u16, board: Option<&Board>) -> Vec<Region> 
     let table = app_table(flash, key);
     let files: Vec<_> = table.iter().filter(|e| e.attr == 0x82).collect();
     if !files.is_empty() {
-        let mut end = BOOT_AREA + files.iter().map(|e| (e.addr + e.len) as usize).max().unwrap_or(0);
+        let mut end = BOOT_AREA + files.iter().map(|e| e.addr as usize + e.len as usize).max().unwrap_or(0);
         for e in &table {
             // PRCT: the code area the firmware protects
             if e.name == "PRCT" && e.addr == 0 && (e.len as usize) <= flash.len() {
@@ -85,8 +85,8 @@ pub fn sector_map(flash: &[u8], key: u16, board: Option<&Board>) -> Vec<Region> 
         mark(Region::Firmware, BOOT_AREA, end);
         for e in table.iter().filter(|e| e.attr == 0x12 || e.attr == 0x92) {
             if let Some(r) = region_of(&e.name) {
-                if e.len > 0 && (e.addr + e.len) as usize <= flash.len() {
-                    mark(r, e.addr as usize, (e.addr + e.len) as usize);
+                if e.len > 0 && e.addr as usize + e.len as usize <= flash.len() {
+                    mark(r, e.addr as usize, e.addr as usize + e.len as usize);
                 }
             }
         }

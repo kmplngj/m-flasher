@@ -119,3 +119,10 @@ controllers are much slower with the unit (all ports of AMD's 600-series
 chipset controller, for example: about 4.5 s for a read). The log shows the
 read speed and suggests another port when it is slow; a port at the back,
 next to the video outputs, is often on a faster controller.
+
+## Saved-file diagnostics (no device)
+
+Use `inspect FILE --support`, `verify FILE --compare SECOND --support`, or
+`dry-plan SAVED_RAW PACKAGE.fwsc --support` with a disconnected unit. These
+commands bypass discovery and never execute a write. See [saved diagnostics](saved-diagnostics.md)
+for the full grammar, private hashes/receipts, exit codes and advisory limits.
