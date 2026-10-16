@@ -16,13 +16,16 @@ mod scsi;
 mod sectormap;
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+#[path = "../tests/support/offline_formats.rs"]
+mod offline_formats;
 mod ui;
 mod wordmark;
 
 fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
     // macOS: the root helper the app starts to reach the unit
-    #[cfg(target_os = "macos")]
+    #[cfg(all(not(any(test, feature = "offline-tests")), target_os = "macos"))]
     if args.first().map(String::as_str) == Some(scsi::macos::USB_HELPER) {
         std::process::exit(scsi::macos::usb_helper());
     }

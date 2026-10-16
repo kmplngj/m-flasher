@@ -1,0 +1,35 @@
+name: offline host tests
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  std-only:
+    strategy:
+      matrix:
+        include:
+          - { os: ubuntu-24.04, python: python3 }
+          - { os: macos-14, python: python3 }
+          - { os: windows-latest, python: python }
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+      - name: Compile out native adapters and prove the guard first
+        run: ${{ matrix.python }} tools/run_offline_tests.py
+
+  guarded-cargo:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+      - name: Populate locked crate source cache on this isolated runner
+        run: cargo fetch --locked
+      - name: Run the guarded shared and FakeFlash suites without network access
+        run: python3 tools/run_offline_tests.py --cargo
+    # No OS driver/backend/bootstrap installation and no application invocation.
+    # Default Linux Cargo dependencies do not include optional rusb/libusb.

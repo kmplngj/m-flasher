@@ -1,7 +1,7 @@
 //! Tests against a simulated unit with NOR flash behaviour. The tests with real
 //! flash images and M-VAVE packages need FLASHER_TEST_DATA (a folder with
 //! smk37-stock.bin, smk37-snoop37.bin, smk37-baudgirl.bin, fm1-stock.bin,
-//! smk37-016.fwsc, fm1-015.fwsc); they are skipped without it.
+//! smk37-016.fwsc, fm1-015.fwsc); they are explicitly ignored unless requested with --ignored.
 
 use crate::boards::{Analysis, FM1, SMK37};
 use crate::formats::{AppStatus, BOOT_AREA, Package, app_files_status, bootloader_identity, build_boot_area, stored_bootloader};
@@ -20,8 +20,7 @@ macro_rules! need {
         match data($name) {
             Some(d) => d,
             None => {
-                eprintln!("skipped: {} not in FLASHER_TEST_DATA", $name);
-                return;
+                panic!("required private fixture {} missing from FLASHER_TEST_DATA", $name);
             }
         }
     };
@@ -150,6 +149,7 @@ fn reads_must_match() {
 }
 
 #[test]
+#[ignore = "requires private FLASHER_TEST_DATA corpus; invoke explicitly with --ignored"]
 fn analysis_identifies_the_known_images() {
     let a = Analysis::new(&need!("smk37-stock.bin"), Some(0xEB6014), 0x980F);
     assert_eq!(a.board.unwrap().key, "smk37");
@@ -168,6 +168,7 @@ fn analysis_identifies_the_known_images() {
 }
 
 #[test]
+#[ignore = "requires private FLASHER_TEST_DATA corpus; invoke explicitly with --ignored"]
 fn sector_maps_of_the_known_images() {
     let m = sector_map(&need!("smk37-stock.bin"), 0x980F, Some(&SMK37));
     assert_eq!(region_ranges(&m, Region::Firmware), "04-9C");
@@ -182,6 +183,7 @@ fn sector_maps_of_the_known_images() {
 }
 
 #[test]
+#[ignore = "requires private FLASHER_TEST_DATA corpus; invoke explicitly with --ignored"]
 fn package_boot_area_round_trip() {
     let pkg = Package::parse(&need!("smk37-016.fwsc")).unwrap();
     assert_eq!(pkg.identity, "SMK-37 Pro_016");
@@ -192,6 +194,7 @@ fn package_boot_area_round_trip() {
 }
 
 #[test]
+#[ignore = "requires private FLASHER_TEST_DATA corpus; invoke explicitly with --ignored"]
 fn firmware_over_snoop37() {
     let mut s = session(need!("smk37-snoop37.bin"));
     let p = s.plan_firmware(&need!("smk37-016.fwsc"), false, false).unwrap();
@@ -206,6 +209,7 @@ fn firmware_over_snoop37() {
 }
 
 #[test]
+#[ignore = "requires private FLASHER_TEST_DATA corpus; invoke explicitly with --ignored"]
 fn firmware_refusals_and_warnings() {
     let s = session(need!("smk37-stock.bin"));
     assert!(matches!(s.plan_firmware(&need!("fm1-015.fwsc"), false, false), Err(Error::Refused(_))));
@@ -218,6 +222,7 @@ fn firmware_refusals_and_warnings() {
 }
 
 #[test]
+#[ignore = "requires private FLASHER_TEST_DATA corpus; invoke explicitly with --ignored"]
 fn firmware_wipe_settings() {
     let s = session(need!("smk37-snoop37.bin"));
     let p = s.plan_firmware(&need!("smk37-016.fwsc"), false, true).unwrap();
@@ -227,6 +232,7 @@ fn firmware_wipe_settings() {
 }
 
 #[test]
+#[ignore = "requires private FLASHER_TEST_DATA corpus; invoke explicitly with --ignored"]
 fn open_bootloader_and_back_to_stock() {
     let stock = need!("smk37-stock.bin");
     let mut s = session(stock.clone());
@@ -243,6 +249,7 @@ fn open_bootloader_and_back_to_stock() {
 }
 
 #[test]
+#[ignore = "requires private FLASHER_TEST_DATA corpus; invoke explicitly with --ignored"]
 fn restore_same_unit_other_unit_other_model() {
     let stock = need!("smk37-stock.bin");
     let mut s = session(need!("smk37-snoop37.bin"));
@@ -260,6 +267,7 @@ fn restore_same_unit_other_unit_other_model() {
 }
 
 #[test]
+#[ignore = "requires private FLASHER_TEST_DATA corpus; invoke explicitly with --ignored"]
 fn write_retried_then_refused() {
     let mut s = session(need!("smk37-snoop37.bin"));
     let p = s.plan_firmware(&need!("smk37-016.fwsc"), false, false).unwrap();
@@ -278,6 +286,7 @@ fn own(mem: Vec<u8>, id: &str) -> FakeFlash {
 }
 
 #[test]
+#[ignore = "requires private FLASHER_TEST_DATA corpus; invoke explicitly with --ignored"]
 fn own_loader_reads_once_and_verifies_by_crc32() {
     let mut s = session_with(own(need!("smk37-snoop37.bin"), "1120050204010521"));
     assert_eq!(s.dev.reads, 1, "one read plus the chip's CRC32");
@@ -296,6 +305,7 @@ fn own_loader_reads_once_and_verifies_by_crc32() {
 }
 
 #[test]
+#[ignore = "requires private FLASHER_TEST_DATA corpus; invoke explicitly with --ignored"]
 fn unit_id_decides_same_unit() {
     let stock = need!("smk37-stock.bin");
     let mut other = stock.clone();
