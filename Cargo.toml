@@ -22,9 +22,17 @@ rusb = { version = "0.9", features = ["vendored"], optional = true }
 rusb = { version = "0.9", features = ["vendored"] }
 libc = "0.2"
 
+[target.'cfg(any(target_os = "macos", target_os = "linux"))'.dependencies]
+# Selected-device access for the experimental reader. Its macOS inventory
+# reads registry metadata, avoiding libusb's initialization-time device probes.
+nusb = { version = "=0.2.8", optional = true, default-features = false }
+
 [features]
 # Compile host adapters out for file-only tests. No native hardware calls.
 offline-tests = []
+# Explicit opt-in for the bounded FMR1 hardware qualification command.
+# Normal releases do not activate this experimental reader adapter.
+reader-qualification = ["dep:nusb"]
 # Linux: talk to the unit through libusb (as on macOS) instead of SCSI generic
 usb = ["dep:rusb"]
 
@@ -32,6 +40,7 @@ usb = ["dep:rusb"]
 windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_Security", "Win32_Storage_FileSystem", "Win32_System_IO", "Win32_System_Ioctl", "Win32_Storage_IscsiDisc", "Win32_System_Console", "Win32_UI_Shell"] }
 
 [build-dependencies]
+cc = "=1.8.0"
 embed-manifest = "1.5"
 winresource = "0.1"
 

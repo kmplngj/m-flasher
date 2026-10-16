@@ -43,6 +43,8 @@ from its keys: install the
   the command line
 - [Safety](docs/safety.md): what is checked before and after every write
 - [How it works](docs/development.md): the protocol, the source, building
+- [Experimental FMR1 reader check](docs/fm1-reader-check.md): selected Stock V15
+  entry, two 256-byte reads and manual return; separate from the existing backup
 - [The flash loader](loader/README.md) that runs on the chip
 
 ## Credits and license

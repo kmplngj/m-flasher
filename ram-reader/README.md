@@ -1,17 +1,20 @@
 # FMR1: minimal FM-1 RAM reader
 
-This source-defined reader is an offline candidate for the stricter FM-1 backup
-route in [issue #3](https://github.com/kmplngj/m-flasher/issues/3). It is built and
-tested separately from the existing M-Flasher loader and application. It is not
-connected to the current CLI, and no hardware profile is enabled by these files.
+This source-defined reader supplies the stricter FM-1 backup route started in
+[issue #3](https://github.com/kmplngj/m-flasher/issues/3). The separate experimental
+[`reader-check` CLI](../docs/fm1-reader-check.md) now connects this exact image
+through strict transport, without the existing combined M-Flasher loader.
+One selected V15/macOS session completed two equal 256-byte reads at address zero
+and manual cold return to Stock; see the [bounded observation](../docs/evidence/fm1-reader-check-2026-10-16.json).
+This does not enable a default hardware profile or establish a full backup.
 
 The candidate sends only JEDEC Read ID (`9F`) and fixed raw Read Data (`03`) to
 the NOR chip. It contains no NOR write-enable, status-register programming,
 erase, program or unprotect command. It also removes the original loader's
 ROM fallback, vendor initializer, optional peripherals and receive path. It
-still executes code in RAM and changes peripheral state; physical startup,
-read completion, memory ownership and unchanged-stock return remain separate
-qualification work in [#5](https://github.com/kmplngj/m-flasher/issues/5) and
+still executes code in RAM and changes peripheral state. The first observation
+is limited to the selected image/device/route and two head reads; broader
+qualification remains in [#5](https://github.com/kmplngj/m-flasher/issues/5) and
 [#8](https://github.com/kmplngj/m-flasher/issues/8).
 
 ## Build only, using existing local tools
@@ -49,7 +52,7 @@ metadata. All multibyte fields below are big endian unless specified otherwise.
 
 Every command is one canonical 31-byte BOT CBW: `USBC` signature, little-endian
 transfer length, direction `80`, LUN zero and a 16-byte CDB. The reader never
-interprets the host tag; the future host must check the returned CSW signature,
+interprets the host tag; the host must check the returned CSW signature,
 matching tag, zero residue, status and exact transfer counts independently.
 
 | CDB | Data IN | Fields |
@@ -58,10 +61,11 @@ matching tag, zero residue, status and exact transfer counts independently.
 | `FC0B` then 14 zero bytes | 16 bytes | Opcode (2), JEDEC (3), status, capacity (4), read size `0100` (2), four zero bytes |
 | `FD05`, address (4), `0100`, eight zero bytes | 256 bytes | One raw physical flash block; address must be 256-byte aligned and at most `000FFF00` |
 
-Only JEDEC `85 60 14` is a candidate, with a fixed 1 MiB capacity. This is bound
-to external FM-1 evidence and is not an observation of the owner's chip. All
-other IDs report unsupported/zero capacity and cannot read. There is no generic
-capacity discovery or support for other chips in this candidate.
+Only JEDEC `85 60 14` is supported, with a fixed 1 MiB capacity. The original
+candidate used external FM-1 evidence; the first selected physical session also
+accepted this JEDEC reply. The capacity remains profile-defined, not independently
+measured by that small read. All other IDs report unsupported/zero capacity and
+cannot read. There is no generic capacity discovery or other-chip support.
 
 Status values are `0` OK, `1` unsupported chip, `2` initialization failed,
 `3` bad command, `4` read failed, `5` reentrant invocation and `6` invalid pointer.
