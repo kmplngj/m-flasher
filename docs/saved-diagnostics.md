@@ -99,7 +99,10 @@ application-only execution remain separate work in #13/#14.
 ## Input limits and tests
 
 Inputs must be nonempty regular files, at most 16 MiB; receipts at most 128 KiB.
-Symlinks, directories and special files are rejected. Work on stable private
+Symlinks, directories and special files are rejected. Unix final opens use
+`O_NOFOLLOW | O_NONBLOCK` before descriptor validation, so substitution with a
+symlink is not followed and a FIFO cannot block inspection. Windows opens the
+final reparse point for validation and denies concurrent write/delete sharing. Work on stable private
 copies in directories you control; this is a bounded local parser, not an OS
 sandbox for adversarial concurrent filesystem replacement. Read/size failures
 are terminal. Declared offsets, lengths, overlaps, duplicates and all package

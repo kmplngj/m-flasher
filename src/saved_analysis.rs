@@ -1,6 +1,6 @@
 //! Advisory analysis of saved bytes. No transport, device or write entrypoints.
 use crate::boards::{Analysis, BootKind, CHIP_KEY, FLASH_SIZE};
-use crate::formats::{AppStatus, BOOT_AREA, Package, SECTOR, app_table};
+use crate::formats::{AppStatus, Package, SECTOR, app_table};
 use crate::sectormap::{Region, region_ranges, sector_map};
 
 pub const MAX_INPUT: usize = crate::formats::MAX_PACKAGE_SIZE;

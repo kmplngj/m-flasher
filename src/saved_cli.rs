@@ -5,6 +5,10 @@ use crate::saved_options::{self, Options};
 use crate::saved_receipt::{MAX_RECEIPT, Receipt};
 use sha2::{Digest, Sha256};
 
+fn sha256(bytes: &[u8]) -> String {
+    Sha256::digest(bytes).iter().map(|b| format!("{b:02x}")).collect()
+}
+
 pub fn run(args: &[String]) -> i32 {
     if args.len() == 2 && matches!(args[1].as_str(), "--help" | "-h") {
         println!("{}", saved_options::HELP); return 0;
@@ -17,7 +21,7 @@ pub fn run(args: &[String]) -> i32 {
 
 pub fn execute(options: &Options) -> Result<(String, bool), &'static str> {
     let bytes = crate::saved_files::read(&options.input, MAX_INPUT)?;
-    let sha256 = format!("{:x}", Sha256::digest(&bytes));
+    let sha256 = sha256(&bytes);
     let (saved, representation) = if options.package {
         (SavedAnalysis::package(&bytes)?.1, "package")
     } else { (SavedAnalysis::raw(&bytes)?, "raw") };
@@ -114,7 +118,7 @@ mod tests {
         let files = Files::new();
         let mut flash = crate::saved_analysis_tests::full();
         let raw = files.put("PRIVATE-SELECTOR.raw", &flash);
-        let hash = format!("{:x}", Sha256::digest(&flash));
+        let hash = sha256(&flash);
         let receipt_text = crate::saved_analysis_tests::receipt(&hash);
         let receipt = files.put("PRIVATE-RECEIPT.json", receipt_text.as_bytes());
         let opts = files.options("verify", &raw, &["--receipt", &receipt, "--sha256", &hash, "--expected-size", "1048576", "--support"]);
@@ -146,6 +150,13 @@ mod tests {
         let unknown = files.put("unknown.raw", &vec![0xFF; FLASH_SIZE]);
         let (report, success) = execute(&files.options("dry-plan", &unknown, &[&pkg, "--support"])).unwrap();
         assert!(!success); assert!(report.contains("blocked-unknown-or-corrupt-layout"));
+    }
+    #[test]
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    fn regular_file_open_flags_match_platform_abi() {
+        #[cfg(target_os = "linux")] let flags = 0x20000 | 0x800;
+        #[cfg(target_os = "macos")] let flags = 0x100 | 0x4;
+        assert_eq!(flags, libc::O_NOFOLLOW | libc::O_NONBLOCK);
     }
     #[test]
     fn errors_omit_paths_contents_hashes_and_invalid_flags() {
