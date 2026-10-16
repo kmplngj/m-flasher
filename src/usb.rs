@@ -9,6 +9,9 @@ use super::{Data, ScsiError, cmd_name};
 use rusb::{Direction, GlobalContext, TransferType};
 use std::time::Duration;
 
+#[path = "usb_data_in.rs"]
+mod data_in;
+
 pub const VID: u16 = 0x4C4A;
 pub const PID: u16 = 0x8057;
 const TIMEOUT: Duration = Duration::from_secs(10);
@@ -161,10 +164,13 @@ impl Device {
             Data::None => Ok(()),
             Data::In(b) if b.is_empty() => Ok(()),
             Data::Out(b) if b.is_empty() => Ok(()),
-            Data::In(buf) => match self.handle.read_bulk(self.ep_in, buf, TIMEOUT) {
-                Ok(_) => Ok(()),
-                Err(rusb::Error::Pipe) => Err(self.ep_in),
-                Err(e) => return Err(failed(&format!("command {name}: reading its data"), e)),
+            Data::In(buf) => match data_in::read(cdb, buf, |bytes| self.handle.read_bulk(self.ep_in, bytes, TIMEOUT)) {
+                Ok(()) => Ok(()),
+                Err(data_in::ReadError::Transport(rusb::Error::Pipe)) => Err(self.ep_in),
+                Err(data_in::ReadError::Transport(e)) => return Err(failed(&format!("command {name}: reading its data"), e)),
+                Err(data_in::ReadError::Incomplete { expected, actual }) => return Err(ScsiError::Failed(format!(
+                    "command {name}: {actual} of {expected} flash bytes received"
+                ))),
             },
             Data::Out(buf) => match self.handle.write_bulk(self.ep_out, buf, TIMEOUT) {
                 Ok(n) if n == buf.len() => Ok(()),
