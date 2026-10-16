@@ -91,7 +91,9 @@ fn bounded_tables_reject_overflow_and_overlaps_with_independent_entries() {
 fn malformed_package_payloads_duplicates_overlaps_and_truncations_fail() {
     for bytes in [include_bytes!("../fixtures/saved/overlap.fwsc").as_slice(),
         include_bytes!("../fixtures/saved/duplicate.fwsc").as_slice(),
-        include_bytes!("../fixtures/saved/aux-crc.fwsc").as_slice()] {
+        include_bytes!("../fixtures/saved/aux-crc.fwsc").as_slice(),
+        include_bytes!("../fixtures/saved/appended-tail.fwsc").as_slice(),
+        include_bytes!("../fixtures/saved/declared-size.fwsc").as_slice()] {
         assert!(Package::parse(bytes).is_err());
         assert!(SavedAnalysis::package(bytes).is_err());
     }

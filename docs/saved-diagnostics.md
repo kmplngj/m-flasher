@@ -108,7 +108,7 @@ symlink is not followed and a FIFO cannot block inspection. Windows opens the
 final reparse point for validation and denies concurrent write/delete sharing. Work on stable private
 copies in directories you control; this is a bounded local parser, not an OS
 sandbox for adversarial concurrent filesystem replacement. Read/size failures
-are terminal. Declared offsets, lengths, overlaps, duplicates and all package
+are terminal. Declared total size, offsets, lengths, overlaps, duplicates and all package
 payload CRCs are checked before those payloads can be used. Unknown free text
 never enters a support report.
 

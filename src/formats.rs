@@ -394,6 +394,9 @@ impl Package {
         if crc16(&head[2..]) != u16le(&head, 0) {
             return err("not a firmware package, or a damaged one (header CRC)");
         }
+        if u32le(&head, 4) as usize != image.len() {
+            return err("damaged firmware package (declared image size)");
+        }
         let count = u16le(&head, 8) as usize;
         if 0x40 + 0x50 * count > image.len() {
             return err("damaged firmware package (file list)");

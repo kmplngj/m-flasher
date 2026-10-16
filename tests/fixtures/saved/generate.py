@@ -72,7 +72,7 @@ def package(flash, malformed=None):
         image.extend(data)
     image[64:start] = directory
     head = bytearray(64)
-    pack_into('<HIH', head, 2, crc_hqx(directory, 0), len(image), len(payloads))
+    pack_into('<HIH', head, 2, crc_hqx(directory, 0), len(image) + (1 if malformed == 'declared-size' else 0), len(payloads))
     pack_into('<H', head, 0, crc_hqx(head[2:], 0))
     image[:64] = enc(head)
     if malformed == 'aux-crc':
@@ -121,3 +121,6 @@ if __name__ == '__main__':
     (ROOT/'missing-app.fwsc').write_bytes(wire_package(missing))
 
     (ROOT/'incident.raw').write_bytes(raw(app_payload=b'OLD-APP-SECTOR!'.ljust(0x3000, b'\xa1'), size=0x8000))
+
+    (ROOT/'appended-tail.fwsc').write_bytes(wire_package(base) + b'\xa5')
+    (ROOT/'declared-size.fwsc').write_bytes(wire_package(base, 'declared-size'))
