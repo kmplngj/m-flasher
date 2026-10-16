@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "toolchain_revision": "jieli-linux-toolchains-20260730.1",
+  "container_image": "sha256:b59036579f0622d1b3aa5286aaf2fcef9b9c6f88f31c6762236fc2f136f7f650",
+  "tools": {
+    "common/bin/clang": {
+      "bytes": 46784720,
+      "sha256": "c45189ee624de0430deb0db02e6dce171fb5538e7fe323e3964dc8ac6236240f"
+    },
+    "pi32v2/bin/ld": {
+      "bytes": 5728352,
+      "sha256": "fd61aff15616bb6f6b58fd2e9ede7af741c7bf05facb3e0cb3d3c9817c268fd9"
+    },
+    "pi32v2/bin/LLVMgold.so": {
+      "bytes": 17659208,
+      "sha256": "2ca8dafde18070d6a42fc47fc2ec4723946cf3d2404ca25981de5070beb1aa12"
+    },
+    "common/bin/objcopy": {
+      "bytes": 2141808,
+      "sha256": "295151226e28891115c97262e6460a06fe67fc0753858e0df3234eb000ea6e66"
+    },
+    "common/bin/objdump": {
+      "bytes": 3523120,
+      "sha256": "f7e449e2c8001d5ed4493a45d1f5f304c8910418e4074acdc8715079ef64e08a"
+    }
+  }
+}
