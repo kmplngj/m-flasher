@@ -731,7 +731,7 @@ mod native {
             if first.len() != RAW_LEN || second.len() != RAW_LEN {
                 return Err("both raw passes must be exactly 1 MiB".into());
             }
-            if provenance.len() > 1024 * 1024 {
+            if provenance.len() > crate::saved_receipt::MAX_PROVENANCE {
                 return Err("storage provenance exceeds the bounded receipt size".into());
             }
             if self.first.raw.metadata().map_err(|e| e.to_string())?.len() != 0
@@ -811,7 +811,8 @@ mod native {
                 Policy::SeparateDirectories => "separate-directories",
             };
             format!(
-                "{{\"schema\":\"fmr-protected-copies-v1\",\"stage\":{},\"length\":{},\"sha256\":{},\"copies\":2,\"independent_media\":false,\"different_filesystems\":{},\"policy\":{},\"first_filesystem\":{},\"second_filesystem\":{},\"first_directory_inode\":{},\"second_directory_inode\":{},\"physical_media_independence_verified\":false,\"returned_to_stock\":false,\"provenance_json\":{}}}\n",
+                "{{\"schema\":{},\"stage\":{},\"length\":{},\"sha256\":{},\"copies\":2,\"independent_media\":false,\"different_filesystems\":{},\"policy\":{},\"first_filesystem\":{},\"second_filesystem\":{},\"first_directory_inode\":{},\"second_directory_inode\":{},\"physical_media_independence_verified\":false,\"returned_to_stock\":false,\"provenance_json\":{}}}\n",
+                json_string(crate::saved_receipt::SCHEMA),
                 json_string(stage),
                 RAW_LEN,
                 json_string(&copies.sha256),
@@ -839,7 +840,7 @@ mod native {
         }
         fn accept_inner(&self, provenance: &str) -> Result<(), String> {
             self.check()?;
-            if provenance.len() > 1024 * 1024 {
+            if provenance.len() > crate::saved_receipt::MAX_PROVENANCE {
                 return Err("capture provenance exceeds the bounded receipt size".into());
             }
             let copies = self
@@ -1091,6 +1092,8 @@ mod native {
             pair.accept("{\"final_identity\":true}").unwrap();
             let receipt = std::fs::read_to_string(pair.first.path.join(CAPTURE_NAME)).unwrap();
             assert!(receipt.contains("\"returned_to_stock\":false"));
+            let parsed = crate::saved_receipt::Receipt::parse(receipt.as_bytes()).unwrap();
+            assert_eq!(parsed.stage, "held-session-receipt-bound-locally");
             assert!(receipt.contains("\"independent_media\":false"));
             assert!(pair.accept("{}").is_err());
             assert!(pair.store(&bytes, &bytes, "{}").is_err());

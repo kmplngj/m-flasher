@@ -10,7 +10,7 @@ python3 tools/run_offline_tests.py
 The runner uses `rustc --test`, the actual shared format/board/sector/protocol
 source, and a compile-time denying adapter. It does not resolve Cargo packages,
 install a hardware backend, enumerate devices, open a device or execute/emulate
-firmware. Four deliberate forbidden-call tests pass before the seven shared
+firmware. Four deliberate forbidden-call tests pass before the shared
 and synthetic fixture tests run. Inventory panics explicitly; open and command
 access return explicit errors. The operation-denial test also covers the MIDI
 and USB categories, which have no native implementation in this harness.
@@ -84,3 +84,25 @@ injected storage/clock coverage. Existing fakes do not establish physical reads,
 bootability, persistence durability or writer qualification. New paths need
 injected transport/storage/clock seams and independent deterministic fault tests
 before those claims can be made.
+
+## Saved-file diagnostics slice (#11)
+
+The std-only harness now also includes saved analysis, strict file-only option
+parsing, the protected-copy receipt contract and bounded regular-file reads.
+`tests/fixtures/saved/generate.py` independently generates checked-in raw/package
+and malformed-table oracles with Python `binascii.crc_hqx` and a separate ENC
+reference. No private firmware is included. App CRC damage, unknown layout,
+truncation, overlap/overflow, auxiliary package payload CRCs, duplicate package
+names, receipt ambiguity, incompatible declarations and incident-shaped mixed
+sectors are exercised. Support output is checked against secret canaries and
+must retain unknown USB/bootability/fresh-acquisition limits. The incident oracle
+has a multi-sector valid APP before mutation; mixed old/new APP sectors retain
+an intact boot container plus inert staged-loader/update markers, and diagnose
+app corruption without claiming a demonstrated resume path. The Unix filesystem
+substitution test uses the system `mkfifo` utility; it installs nothing.
+
+The full guarded Cargo pass also exercises the actual offline CLI dispatch,
+reference mismatch exit codes, protected writer/reader receipt interoperability,
+and the pure planner shared with the existing session path. Native adapters stay
+compiled out. This adds bounded parser/incident fixtures toward #2; it does not
+close the remaining transport, storage/clock or physical failure-model work.

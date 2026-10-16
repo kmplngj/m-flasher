@@ -8,6 +8,14 @@
 #[cfg(all(feature = "offline-tests", not(test)))]
 compile_error!("offline-tests is test-only; use tools/run_offline_tests.py --cargo for tests and omit it from application builds");
 
+mod saved_analysis;
+mod saved_options;
+mod saved_receipt;
+mod saved_files;
+mod saved_cli;
+#[cfg(test)]
+#[path = "../tests/support/saved_analysis.rs"]
+mod saved_analysis_tests;
 mod boards;
 mod cli;
 mod controller;

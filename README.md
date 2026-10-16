@@ -20,6 +20,8 @@ the unit is broken. For Windows, macOS and Linux.
   write, exactly what will change.
 - Checks the package is for this model, writes only what changes, and
   verifies everything written: see [Safety](docs/safety.md).
+- **Inspect saved dumps**, compare files and export sanitized recovery diagnostics
+  without discovering or connecting a device ([file-only commands](docs/saved-diagnostics.md)).
 - A command line as well as the window.
 
 ## Getting started
@@ -41,6 +43,8 @@ from its keys: install the
 
 - [Using M-Flasher](docs/usage.md): each system, download mode, the actions,
   the command line
+- [Saved-file inspection and diagnostics](docs/saved-diagnostics.md): offline integrity,
+  receipt checks, sanitized support output and advisory dry plans
 - [Safety](docs/safety.md): what is checked before and after every write
 - [How it works](docs/development.md): the protocol, the source, building
 - [Experimental FMR1 reader check](docs/fm1-reader-check.md): selected Stock V15

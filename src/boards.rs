@@ -163,7 +163,7 @@ impl Analysis {
         self.firmware_text = "unknown".into();
         let table = app_table(flash, key);
         let Some(app) = table.iter().find(|e| e.name == "app.bin") else { return };
-        if BOOT_AREA + (app.addr + app.len) as usize > flash.len() {
+        if BOOT_AREA + app.addr as usize + app.len as usize > flash.len() {
             return;
         }
         let text = app_read(flash, BOOT_AREA, app.addr as usize, app.len as usize, key);

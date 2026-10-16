@@ -59,7 +59,9 @@ def main(argv=None):
     modules = {name: root / "src" / (name + ".rs")
                for name in ("scsi", "formats", "boards", "sectormap", "jl",
                             "fmr_reader", "fmr_bot", "fmr_options", "fmr_ipc",
-                            "fmr_backup_options", "fmr_backup_ipc", "fmr_job_guard")}
+                            "fmr_backup_options", "fmr_backup_ipc", "fmr_job_guard",
+                            "saved_analysis", "saved_options", "saved_receipt", "saved_files")}
+    modules["saved_analysis_tests"] = root / "tests" / "support" / "saved_analysis.rs"
     modules["offline_formats"] = root / "tests" / "support" / "offline_formats.rs"
     for name in ("fmr_reader", "fmr_bot", "fmr_options", "fmr_ipc",
                  "fmr_backup_options", "fmr_backup_ipc"):
