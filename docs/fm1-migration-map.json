@@ -10,10 +10,11 @@
     "duplicates": false
   },
   "candidate_status": {
-    "minimal_ram_reader": "Implemented locally on init; two byte-identical offline builds, hosted ASan/UBSan fake-core/MMIO tests, 37 artifact mutation tests and independent static review pass. Source unpublished; no strict runtime integration or physical qualification.",
+    "minimal_ram_reader": "Implemented offline candidate with two identical artifact builds, hosted fake-core/MMIO checks, 37 artifact mutation tests and independent static review. Source and provenance delivered by the dedicated M1 fork PR; strict runtime integration and physical qualification remain absent.",
     "strict_runtime_integration": false,
     "physical_qualification": false,
-    "development_hardware_access": false
+    "development_hardware_access": false,
+    "build_report": "fm1-m1-offline-build.md"
   },
   "disposition_counts": {
     "already-parity": 2,
