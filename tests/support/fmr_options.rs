@@ -9,7 +9,7 @@ fn valid() -> Vec<String> {
         "--reader",
         "/nonexistent/reader image.bin",
         "--device",
-        "usb:1-255",
+        "usb:171-127",
         "--location",
         "aBcD0001",
         "--serial",
@@ -43,7 +43,7 @@ fn prepare_and_run_parse_without_opening_paths() {
         options.output,
         PathBuf::from("/nonexistent/output directory")
     );
-    assert_eq!(options.device, "usb:1-255");
+    assert_eq!(options.device, "usb:171-127");
     assert_eq!(options.location, 0xABCD0001);
     assert_eq!(options.serial, "ABCD0123456789EF");
     args[0] = "--run".into();
@@ -74,6 +74,45 @@ fn exactly_one_mode_and_each_required_value_are_mandatory() {
         let mut args = valid();
         args.extend([flag.into(), "duplicate".into()]);
         assert!(fmr_options::parse(&args).is_err(), "duplicate {flag}");
+    }
+}
+
+#[test]
+fn usb_selector_boundaries_match_preflight_in_both_modes() {
+    // Explicit selector/location pairs are independent of the production parser.
+    for mode in ["--prepare", "--run"] {
+        for (device, location, expected_location) in [
+            ("usb:0-1", "00000001", 0x00000001),
+            ("usb:0-127", "00010000", 0x00010000),
+            ("usb:255-1", "ff000001", 0xFF000001),
+            ("usb:255-127", "FF010000", 0xFF010000),
+        ] {
+            let mut args = with("--device", device);
+            args[0] = mode.into();
+            let at = args.iter().position(|v| v == "--location").unwrap();
+            args[at + 1] = location.into();
+            let command = fmr_options::parse(&args).unwrap();
+            let options = match (mode, command) {
+                ("--prepare", Command::Prepare(options)) | ("--run", Command::Run(options)) => {
+                    options
+                }
+                _ => panic!("wrong mode"),
+            };
+            assert_eq!(options.device, device);
+            assert_eq!(options.location, expected_location);
+        }
+        for device in ["usb:171-0", "usb:171-128", "usb:171-200", "usb:171-255"] {
+            let mut args = with("--device", device);
+            args[0] = mode.into();
+            assert!(fmr_options::parse(&args).is_err(), "{mode} {device}");
+        }
+        let mut args = with("--location", "ACCD0001");
+        args[0] = mode.into();
+        assert_eq!(
+            fmr_options::parse(&args),
+            Err("--location must match selected USB bus".into()),
+            "{mode}"
+        );
     }
 }
 

@@ -49,14 +49,15 @@ pub fn parse(args: &[String]) -> Result<Command, String> {
     let run = mode.ok_or("choose exactly one of --prepare or --run")?;
     let reader = PathBuf::from(reader.ok_or("missing --reader")?);
     let device = device.ok_or("missing --device")?;
-    let canonical_u8 = |part: &str| part.parse::<u8>().is_ok_and(|n| n.to_string() == part);
-    let valid_device = device
+    let selected_bus = device
         .strip_prefix("usb:")
         .and_then(|s| s.split_once('-'))
-        .is_some_and(|(bus, address)| canonical_u8(bus) && canonical_u8(address));
-    if !valid_device {
-        return Err("--device must be canonical usb:<u8>-<u8>".into());
-    }
+        .and_then(|(bus, address)| Some((bus.parse::<u8>().ok()?, address.parse::<u8>().ok()?)))
+        .filter(|(bus, address)| {
+            (1..=127).contains(address) && device == format!("usb:{bus}-{address}")
+        })
+        .map(|(bus, _)| bus)
+        .ok_or("--device must be canonical usb:<u8>-<address 1..127>")?;
     let location = location.ok_or("missing --location")?;
     if location.len() != 8 || !location.bytes().all(|b| b.is_ascii_hexdigit()) {
         return Err("--location must be eight hexadecimal digits".into());
@@ -64,6 +65,9 @@ pub fn parse(args: &[String]) -> Result<Command, String> {
     let location = u32::from_str_radix(&location, 16).map_err(|_| "invalid --location")?;
     if location == 0 {
         return Err("--location must be nonzero".into());
+    }
+    if (location >> 24) as u8 != selected_bus {
+        return Err("--location must match selected USB bus".into());
     }
     let serial = serial.ok_or("missing --serial")?;
     if serial.len() != 16 || !serial.bytes().all(|b| b.is_ascii_hexdigit()) {
