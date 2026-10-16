@@ -5,6 +5,9 @@
 
 #![cfg_attr(windows, windows_subsystem = "windows")]
 
+#[cfg(all(feature = "offline-tests", not(test)))]
+compile_error!("offline-tests is test-only; use tools/run_offline_tests.py --cargo for tests and omit it from application builds");
+
 mod boards;
 mod cli;
 mod controller;
@@ -18,13 +21,16 @@ mod usb_cbw;
 mod sectormap;
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+#[path = "../tests/support/offline_formats.rs"]
+mod offline_formats;
 mod ui;
 mod wordmark;
 
 fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
     // macOS: the root helper the app starts to reach the unit
-    #[cfg(target_os = "macos")]
+    #[cfg(all(not(any(test, feature = "offline-tests")), target_os = "macos"))]
     if args.first().map(String::as_str) == Some(scsi::macos::USB_HELPER) {
         std::process::exit(scsi::macos::usb_helper());
     }

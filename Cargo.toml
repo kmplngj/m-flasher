@@ -23,6 +23,8 @@ rusb = { version = "0.9", features = ["vendored"] }
 libc = "0.2"
 
 [features]
+# Compile host adapters out for file-only tests. No native hardware calls.
+offline-tests = []
 # Linux: talk to the unit through libusb (as on macOS) instead of SCSI generic
 usb = ["dep:rusb"]
 
