@@ -5,6 +5,9 @@
 
 #![cfg_attr(windows, windows_subsystem = "windows")]
 
+#[cfg(all(feature = "offline-tests", not(test)))]
+compile_error!("offline-tests is test-only; use tools/run_offline_tests.py --cargo for tests and omit it from application builds");
+
 mod boards;
 mod cli;
 mod controller;

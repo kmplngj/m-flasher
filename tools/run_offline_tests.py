@@ -85,6 +85,17 @@ def main(argv=None):
         # cfg(test)/offline-tests compiles all project native adapters out.
         run(["cargo", "test", "--offline", "--locked", "--no-default-features",
              "--features", "offline-tests"], root)
+        # The test-only feature must never produce a distributable application
+        # with a denying adapter, including through cargo build --all-features.
+        print("+ checking that offline-tests refuses a production build", flush=True)
+        refused = subprocess.run(
+            ["cargo", "check", "--offline", "--locked", "--no-default-features",
+             "--features", "offline-tests"], cwd=root, text=True,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=1200)
+        if refused.returncode == 0 or "offline-tests is test-only" not in refused.stderr:
+            print(refused.stderr, file=sys.stderr)
+            raise RuntimeError("production build did not report the test-only feature refusal")
+        print("Production build correctly refuses the test-only feature.", flush=True)
     return 0
 
 

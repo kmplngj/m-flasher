@@ -29,6 +29,11 @@ a 25-minute limit. Test output goes under `target/offline-tests/`. Normal applic
 build defaults, dependency versions, bundled artifacts and platform behavior
 are unchanged.
 
+`offline-tests` is a test-only feature. Application builds that enable it,
+including `cargo build --all-features`, fail with an explicit compile error
+instead of producing a flasher with disabled adapters. Use the normal default
+or selected production features for application builds.
+
 ## Full existing suite
 
 With all locked dependencies already cached:
@@ -46,6 +51,10 @@ adapters remain absent from the test executable. The isolated Linux CI job
 prefetches locked crate sources, then uses this offline command; default Linux
 dependencies exclude optional libusb. CI adds no OS driver/backend bootstrap
 and never runs the application.
+
+After the full suite, the runner also requires a production `cargo check` with
+the test-only feature to fail for that exact compile-error reason. A missing
+dependency or unrelated compiler error cannot satisfy this negative check.
 
 Eleven existing tests require a private firmware corpus and are built-in
 `#[ignore]` tests. Their output is honestly counted as ignored. To request them
