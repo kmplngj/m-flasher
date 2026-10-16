@@ -8,7 +8,7 @@ The minimal read-only RAM reader is an implemented **offline candidate**. Two in
 
 First establish the exact reader artifact (#3), strict transport (#4) and host profile (#5), then running-stock identity/entry and a small read/return qualification (#6–#8). Only afterward activate two fresh full raw passes (#9) and protected independent copies (#10). Offline seams (#2) and saved-file work can progress independently of physical gates.
 
-Saved-file diagnosis and selective archives (#11–#12) lead into exact data/transition policy and application-only verification (#13–#14). Retain MIDI OTA (#15) only if selected. Writer/recovery qualification (#16) and agent physical cycles (#17) require an external spare/bench, never the sole owner unit. A selectively enabled small CLI (#18) need not wait for optional writer/agent work. Web (#19) remains step 2.
+Saved-file diagnosis (#11) supplies the inputs for exact data/transition policy (#13), which in turn qualifies selective archives (#12). Application-only verification (#14) also depends on the accepted capture/storage and transition contracts. Retain MIDI OTA (#15) only if selected. Writer/recovery qualification (#16) and agent physical cycles (#17) require an external spare/bench, never the sole owner unit. A selectively enabled small CLI (#18) need not wait for optional writer/agent work. Web (#19) remains step 2.
 
 ## Published work
 
