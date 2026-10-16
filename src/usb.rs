@@ -9,6 +9,8 @@ use super::{Data, ScsiError, cmd_name};
 use rusb::{Direction, GlobalContext, TransferType};
 use std::time::Duration;
 
+use crate::usb_cbw as cbw;
+
 pub const VID: u16 = 0x4C4A;
 pub const PID: u16 = 0x8057;
 const TIMEOUT: Duration = Duration::from_secs(10);
@@ -153,7 +155,13 @@ impl Device {
         cbw[14] = cdb.len() as u8;
         cbw[15..15 + cdb.len()].copy_from_slice(cdb);
         let name = cmd_name(cdb);
-        self.handle.write_bulk(self.ep_out, &cbw, TIMEOUT).map_err(|e| failed(&format!("sending command {name}"), e))?;
+        cbw::write(&cbw, |bytes| self.handle.write_bulk(self.ep_out, bytes, TIMEOUT))
+            .map_err(|e| match e {
+                cbw::WriteError::Transport(e) => failed(&format!("sending command {name}"), e),
+                cbw::WriteError::Incomplete(n) => ScsiError::Failed(format!(
+                    "sending command {name}: {n} of {} bytes sent", cbw.len()
+                )),
+            })?;
         // libusb ends a read at a short packet: the device may send less.
         // No data, no data phase (an empty write would send a zero-length
         // packet, which the device takes for the next command).
