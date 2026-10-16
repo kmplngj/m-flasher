@@ -18,9 +18,10 @@
   for passive inventory or read-only queries. Keep real adapters unavailable.
 - Do not run the flasher against devices, install hardware backends, execute
   or emulate target code, upload artifacts, or write flash during development.
-- Firmware and target artifact builds remain excluded in this baseline.
-  Issue #3 will deliver the selected RAM reader's reviewed offline build
-  contract and its narrowly scoped exception together with the source.
+- Firmware builds remain excluded except the selected `ram-reader/` offline
+  artifact build documented in `ram-reader/README.md`: existing locked tools,
+  cached image, no networking or devices, fresh output below `target/`.
+  Its host-native fake harnesses and file-only artifact tests are permitted.
 - Hardware work needs a separate explicit human request and the selected
   operation's evidence gates. An issue, PR or this file grants no hardware
   authority. The sole owner FM-1 is never used for writer/fault/agent cycles.

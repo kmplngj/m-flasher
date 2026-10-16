@@ -1,0 +1,40 @@
+name: ram-reader
+
+on:
+  push:
+    paths:
+      - 'ram-reader/**'
+      - '.github/workflows/ram-reader.yml'
+  pull_request:
+    paths:
+      - 'ram-reader/**'
+      - '.github/workflows/ram-reader.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  offline-reader:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-14]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - name: Hosted protocol core with injected HAL
+        run: |
+          mkdir -p target/fmr-tests
+          clang -std=c11 -Wall -Wextra -Werror -fsanitize=address,undefined \
+            -DFMR_HOST_TEST -DFMR_BUILD_ID=0x12345678 -Iram-reader/include \
+            ram-reader/src/reader.c ram-reader/tests/core_test.c \
+            -o target/fmr-tests/core-test
+          target/fmr-tests/core-test
+      - name: Hosted SPI source with simulated registers
+        run: |
+          clang -std=c11 -Wall -Wextra -Werror -fsanitize=address,undefined \
+            -DFMR_HOST_TEST -DFMR_HOST_MMIO_TEST -Iram-reader/include \
+            ram-reader/src/wl82.c ram-reader/tests/mmio_test.c \
+            -o target/fmr-tests/mmio-test
+          target/fmr-tests/mmio-test
