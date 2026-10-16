@@ -33,3 +33,22 @@ jobs:
         run: python3 tools/run_offline_tests.py --cargo
     # No OS driver/backend/bootstrap installation and no application invocation.
     # Default Linux Cargo dependencies do not include optional rusb/libusb.
+
+  reader-adapter-compile:
+    strategy:
+      matrix:
+        include:
+          - { os: macos-14, features: reader-qualification }
+          - { os: ubuntu-24.04, features: 'reader-qualification,usb' }
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+      - name: Populate locked crate source cache on this isolated runner
+        run: cargo fetch --locked
+      - name: Typecheck the optional adapter without running the application
+        run: cargo check --offline --locked --features '${{ matrix.features }}'
+      - name: Typecheck the one-shot macOS MIDI helper without running it
+        if: runner.os == 'macOS'
+        run: clang -std=c11 -Wall -Wextra -Werror -Wno-deprecated-declarations -fsyntax-only tools/fmr_stock_entry.c
+    # Compile only. No device discovery, helper invocation or target execution.

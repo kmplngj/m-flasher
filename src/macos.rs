@@ -26,6 +26,13 @@ use std::sync::Mutex;
 /// `M-Flasher --usb-helper`: the root helper.
 pub const USB_HELPER: &str = "--usb-helper";
 
+/// The FMR1 helper accepts exactly one bounded typed request and exits. It
+/// cannot inventory units, open arbitrary paths or execute generic commands.
+#[cfg(feature = "reader-qualification")]
+pub const FMR_HELPER: &str = "--fmr-reader-helper";
+#[cfg(feature = "reader-qualification")]
+pub const FMR_BACKUP_HELPER: &str = "--fmr-backup-helper";
+
 const FIND: u8 = 1;
 const OPEN: u8 = 2;
 const EXECUTE: u8 = 3;
@@ -52,12 +59,23 @@ static HELPER: Mutex<Option<Helper>> = Mutex::new(None);
 impl Helper {
     /// Starts the helper after the system's password dialog.
     fn start() -> Result<Helper, ScsiError> {
-        let refused = || ScsiError::NeedsAdmin("M-Flasher needs an administrator's password to reach the unit".into());
+        Self::start_with_flag(
+            USB_HELPER,
+            c"M-Flasher needs administrator rights to reach the unit's USB download mode.",
+        )
+    }
+
+    fn start_with_flag(flag: &str, prompt: &std::ffi::CStr) -> Result<Helper, ScsiError> {
+        let refused = || {
+            ScsiError::NeedsAdmin(
+                "M-Flasher needs an administrator's password to reach the unit".into(),
+            )
+        };
         let exe = std::env::current_exe().map_err(|e| ScsiError::Failed(e.to_string()))?;
-        let path = CString::new(exe.as_os_str().as_bytes()).map_err(|e| ScsiError::Failed(e.to_string()))?;
-        let arg = CString::new(USB_HELPER).unwrap();
+        let path = CString::new(exe.as_os_str().as_bytes())
+            .map_err(|e| ScsiError::Failed(e.to_string()))?;
+        let arg = CString::new(flag).map_err(|e| ScsiError::Failed(e.to_string()))?;
         let argv = [arg.as_ptr(), std::ptr::null()];
-        let prompt = c"M-Flasher needs administrator rights to reach the unit's USB download mode.";
         // SAFETY: Security framework calls with initialised items; every
         // pointer outlives the call it is passed to.
         unsafe {
@@ -71,18 +89,36 @@ impl Helper {
                 value: std::ptr::null_mut(),
                 flags: 0,
             };
-            let rights = AuthorizationItemSet { count: 1, items: &mut right };
+            let rights = AuthorizationItemSet {
+                count: 1,
+                items: &mut right,
+            };
             let mut prompt_item = AuthorizationItem {
                 name: c"prompt".as_ptr(),
                 value_length: prompt.to_bytes().len(),
                 value: prompt.as_ptr() as *mut c_void,
                 flags: 0,
             };
-            let environment = AuthorizationItemSet { count: 1, items: &mut prompt_item };
+            let environment = AuthorizationItemSet {
+                count: 1,
+                items: &mut prompt_item,
+            };
             // interaction allowed, extend rights, preauthorize
             let mut pipe: *mut libc::FILE = std::ptr::null_mut();
-            let ok = AuthorizationCopyRights(auth, &rights, &environment, 1 | 2 | 16, std::ptr::null_mut()) == 0
-                && AuthorizationExecuteWithPrivileges(auth, path.as_ptr(), 0, argv.as_ptr(), &mut pipe) == 0
+            let ok = AuthorizationCopyRights(
+                auth,
+                &rights,
+                &environment,
+                1 | 2 | 16,
+                std::ptr::null_mut(),
+            ) == 0
+                && AuthorizationExecuteWithPrivileges(
+                    auth,
+                    path.as_ptr(),
+                    0,
+                    argv.as_ptr(),
+                    &mut pipe,
+                ) == 0
                 && !pipe.is_null();
             AuthorizationFree(auth, 0);
             if !ok {
@@ -91,7 +127,9 @@ impl Helper {
             // the helper's standard input and output, both ways
             let fd = libc::dup(libc::fileno(pipe));
             libc::fclose(pipe);
-            Ok(Helper { pipe: File::from_raw_fd(fd) })
+            Ok(Helper {
+                pipe: File::from_raw_fd(fd),
+            })
         }
     }
 
@@ -100,7 +138,17 @@ impl Helper {
         self.pipe.write_all(request)?;
         let mut head = [0u8; 5];
         self.pipe.read_exact(&mut head)?;
-        let mut payload = vec![0u8; u32::from_le_bytes(head[1..5].try_into().unwrap()) as usize];
+        let payload_len = u32::from_le_bytes(head[1..5].try_into().unwrap()) as usize;
+        #[cfg(feature = "reader-qualification")]
+        if request.first() == Some(&crate::fmr_ipc::FMR_CHECK)
+            && payload_len > crate::fmr_ipc::MAX_RESPONSE_LEN
+        {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                "FMR1 helper response exceeds fixed bound",
+            ));
+        }
+        let mut payload = vec![0u8; payload_len];
         self.pipe.read_exact(&mut payload)?;
         Ok((head[0], payload))
     }
@@ -123,6 +171,140 @@ fn ask(request: &[u8], start: bool) -> Result<Vec<u8>, ScsiError> {
             *helper = None;
             Err(ScsiError::Failed(format!("the USB helper stopped: {e}")))
         }
+    }
+}
+
+/// One fixed read-only qualification through a dedicated authorization helper.
+/// Paths, output files and arbitrary CDBs never cross this privilege boundary.
+#[cfg(feature = "reader-qualification")]
+pub fn reader_check(
+    selection: &crate::fmr_native::Selection,
+    image: crate::fmr_bootstrap::Image,
+) -> Result<crate::fmr_cli::HardwareResult, String> {
+    let request = crate::fmr_ipc::encode_request(&crate::fmr_ipc::Request {
+        location: selection.location,
+        device: selection.device.clone(),
+        serial: selection.serial.clone(),
+        image: image.as_bytes().to_vec(),
+    })?;
+    if is_root() {
+        return crate::fmr_cli::physical_selected(
+            crate::fmr_native::Selection {
+                device: selection.device.clone(),
+                location: selection.location,
+                serial: selection.serial.clone(),
+            },
+            image,
+        );
+    }
+    // Dedicated child, not the generic helper/global mutex: one typed call,
+    // no legacy session reuse, reconnect, retry or alternate operation.
+    let mut helper = Helper::start_with_flag(
+        FMR_HELPER,
+        c"M-Flasher needs administrator rights for one selected read-only FMR1 check.",
+    )
+    .map_err(|error| error.to_string())?;
+    let (status, bytes) = helper
+        .call(&request)
+        .map_err(|error| format!("the FMR1 helper stopped: {error}"))?;
+    if status != OK {
+        return Err(String::from_utf8_lossy(&bytes).into_owned());
+    }
+    let response = crate::fmr_ipc::decode_response(&bytes)?;
+    Ok(crate::fmr_cli::HardwareResult {
+        first: response.first,
+        second: response.second,
+        binding: response.binding,
+    })
+}
+
+/// Two-phase, fixed full capture. The dedicated helper retains the sole device
+/// owner while the unprivileged client syncs/reopens its preflighted files.
+/// Only a matching storage acknowledgement permits final reader checkpoints.
+#[cfg(feature = "reader-qualification")]
+pub fn reader_backup<F: FnOnce(&crate::fmr_full::Capture, &str) -> Result<(), String>>(
+    selection: &crate::fmr_native::Selection,
+    image: crate::fmr_bootstrap::Image,
+    persist: F,
+) -> Result<(crate::fmr_full::Capture, String), String> {
+    use crate::fmr_backup_ipc as ipc;
+    let request = ipc::encode_request(&ipc::Request {
+        location: selection.location,
+        device: selection.device.clone(),
+        serial: selection.serial.clone(),
+        image: image.as_bytes().to_vec(),
+    })?;
+    if is_root() {
+        return crate::fmr_backup_cli::physical_full_selected(
+            crate::fmr_native::Selection {
+                device: selection.device.clone(),
+                location: selection.location,
+                serial: selection.serial.clone(),
+            },
+            image,
+            std::time::Instant::now(),
+            None,
+            persist,
+        );
+    }
+    let helper = Helper::start_with_flag(
+        FMR_BACKUP_HELPER,
+        c"M-Flasher needs administrator rights for one selected read-only full FMR1 backup.",
+    )
+    .map_err(|error| error.to_string())?;
+    let mut pipe = crate::fmr_backup_pipe::Pipe::duplex(helper.pipe)?;
+    pipe.write_all(&(request.len() as u32).to_le_bytes())?;
+    pipe.write_all(&request)?;
+    crate::fmr_backup_exchange::receive(&mut pipe, persist)
+}
+
+/// No path, arbitrary CDB, range, writer, reset or legacy dispatcher is exposed.
+#[cfg(feature = "reader-qualification")]
+pub fn backup_helper() -> i32 {
+    use crate::fmr_backup_ipc as ipc;
+    use sha2::{Digest, Sha256};
+    let mut pipe = match crate::fmr_backup_pipe::Pipe::stdio() {
+        Ok(pipe) => pipe,
+        Err(_) => return 1,
+    };
+    let result: Result<[u8; 32], String> = (|| {
+        let mut prefix = [0u8; 4];
+        pipe.read_exact(&mut prefix)?;
+        if u32::from_le_bytes(prefix) as usize != ipc::REQUEST_LEN {
+            return Err("FMR1 full backup request exceeds fixed length".into());
+        }
+        let mut frame = [0u8; ipc::REQUEST_LEN];
+        pipe.read_exact(&mut frame)?;
+        let request = ipc::decode_request(&frame)?;
+        let image = crate::fmr_bootstrap::Image::verify(request.image)?;
+        let started = pipe.started;
+        let cancellation_fd = pipe.input_fd();
+        let (capture, _binding) = crate::fmr_backup_cli::physical_full_selected(
+            crate::fmr_native::Selection {
+                device: request.device,
+                location: request.location,
+                serial: request.serial,
+            },
+            image,
+            started,
+            Some(cancellation_fd),
+            |capture, binding| crate::fmr_backup_exchange::publish(&mut pipe, capture, binding),
+        )?;
+        let mut digest = [0u8; 32];
+        digest.copy_from_slice(&Sha256::digest(&capture.first));
+        Ok(digest)
+    })();
+    let (status, payload) = match result {
+        Ok(digest) => (ipc::FINISHED, digest.to_vec()),
+        Err(error) => (ipc::FAILED, error.into_bytes()),
+    };
+    if pipe
+        .write_frame(status, &payload, ipc::MAX_BINDING_LEN)
+        .is_err()
+    {
+        1
+    } else {
+        0
     }
 }
 
@@ -191,7 +373,10 @@ pub fn find_devices() -> Vec<(String, String)> {
     if let Ok(list) = ask(&[FIND], false) {
         return String::from_utf8_lossy(&list)
             .lines()
-            .filter_map(|l| l.split_once('\t').map(|(p, d)| (p.to_string(), d.to_string())))
+            .filter_map(|l| {
+                l.split_once('\t')
+                    .map(|(p, d)| (p.to_string(), d.to_string()))
+            })
             .collect();
     }
     registry_units()
@@ -216,7 +401,12 @@ fn registry_units() -> Vec<(String, String)> {
             ok.then_some(n)
         };
         let mut services = 0u32;
-        if IOServiceGetMatchingServices(0, IOServiceMatching(c"IOUSBHostDevice".as_ptr()), &mut services) != 0 {
+        if IOServiceGetMatchingServices(
+            0,
+            IOServiceMatching(c"IOUSBHostDevice".as_ptr()),
+            &mut services,
+        ) != 0
+        {
             return out;
         }
         loop {
@@ -224,10 +414,18 @@ fn registry_units() -> Vec<(String, String)> {
             if service == 0 {
                 break;
             }
-            if number(service, c"idVendor") == Some(usb::VID as i64) && number(service, c"idProduct") == Some(usb::PID as i64) {
-                if let (Some(location), Some(address)) = (number(service, c"locationID"), number(service, c"USB Address")) {
+            if number(service, c"idVendor") == Some(usb::VID as i64)
+                && number(service, c"idProduct") == Some(usb::PID as i64)
+            {
+                if let (Some(location), Some(address)) = (
+                    number(service, c"locationID"),
+                    number(service, c"USB Address"),
+                ) {
                     let bus = (location >> 24) & 0xff;
-                    out.push((format!("usb:{bus}-{address}"), format!("WL82 UBOOT1.00 (USB bus {bus}, device {address})")));
+                    out.push((
+                        format!("usb:{bus}-{address}"),
+                        format!("WL82 UBOOT1.00 (USB bus {bus}, device {address})"),
+                    ));
                 }
             }
             IOObjectRelease(service);
@@ -255,7 +453,11 @@ pub fn usb_helper() -> i32 {
             return 0;
         }
         let answer: Result<Vec<u8>, ScsiError> = match request[0] {
-            FIND => Ok(usb::find_devices().iter().map(|(p, d)| format!("{p}\t{d}\n")).collect::<String>().into_bytes()),
+            FIND => Ok(usb::find_devices()
+                .iter()
+                .map(|(p, d)| format!("{p}\t{d}\n"))
+                .collect::<String>()
+                .into_bytes()),
             OPEN => {
                 device = None;
                 usb::Device::open(&String::from_utf8_lossy(&request[1..])).map(|d| {
@@ -281,10 +483,78 @@ pub fn usb_helper() -> i32 {
         let mut frame = vec![status];
         frame.extend((payload.len() as u32).to_le_bytes());
         frame.extend(payload);
-        if output.write_all(&frame).and_then(|_| output.flush()).is_err() {
+        if output
+            .write_all(&frame)
+            .and_then(|_| output.flush())
+            .is_err()
+        {
             return 0;
         }
     }
+}
+
+/// Dedicated privilege entrypoint: one exact-length request, one bounded reply,
+/// then exit. No generic helper dispatcher or native legacy adapter is reached.
+#[cfg(feature = "reader-qualification")]
+pub fn reader_helper() -> i32 {
+    let mut input = std::io::stdin().lock();
+    let mut output = std::io::stdout().lock();
+    let mut prefix = [0u8; 4];
+    if input.read_exact(&mut prefix).is_err()
+        || u32::from_le_bytes(prefix) as usize != crate::fmr_ipc::REQUEST_LEN
+    {
+        return 1;
+    }
+    // Fixed allocation only after validating the outer length, before any work.
+    let mut request = [0u8; crate::fmr_ipc::REQUEST_LEN];
+    if input.read_exact(&mut request).is_err() || request[0] != crate::fmr_ipc::FMR_CHECK {
+        return 1;
+    }
+    let (status, payload) = match reader_request(&request) {
+        Ok(payload) => (OK, payload),
+        Err(error) => (FAILED, error.to_string().into_bytes()),
+    };
+    let (status, payload) = if payload.len() <= crate::fmr_ipc::MAX_RESPONSE_LEN {
+        (status, payload)
+    } else {
+        (FAILED, b"FMR1 helper response exceeds fixed bound".to_vec())
+    };
+    let mut frame = vec![status];
+    frame.extend_from_slice(&(payload.len() as u32).to_le_bytes());
+    frame.extend_from_slice(&payload);
+    if output
+        .write_all(&frame)
+        .and_then(|_| output.flush())
+        .is_err()
+    {
+        1
+    } else {
+        0
+    }
+}
+
+#[cfg(feature = "reader-qualification")]
+fn reader_request(request: &[u8]) -> Result<Vec<u8>, ScsiError> {
+    let result = (|| {
+        let request = crate::fmr_ipc::decode_request(request)?;
+        // Reverify pinned bytes inside the privileged process before native
+        // lookup/open. A client-side check is not a trust boundary for root.
+        let image = crate::fmr_bootstrap::Image::verify(request.image)?;
+        let read = crate::fmr_cli::physical_selected(
+            crate::fmr_native::Selection {
+                device: request.device,
+                location: request.location,
+                serial: request.serial,
+            },
+            image,
+        )?;
+        crate::fmr_ipc::encode_response(&crate::fmr_ipc::Response {
+            first: read.first,
+            second: read.second,
+            binding: read.binding,
+        })
+    })();
+    result.map_err(ScsiError::Failed)
 }
 
 /// EXECUTE: cdb length, cdb, direction (0 none, 1 in, 2 out), data length,
@@ -301,7 +571,9 @@ fn execute(d: &mut usb::Device, r: &[u8]) -> Result<Vec<u8>, ScsiError> {
             let mut buf = vec![0u8; len];
             d.execute(cdb, Data::In(&mut buf)).map(|_| buf)
         }
-        _ => d.execute(cdb, Data::Out(r.get(6 + n..6 + n + len).ok_or_else(bad)?)).map(|_| vec![]),
+        _ => d
+            .execute(cdb, Data::Out(r.get(6 + n..6 + n + len).ok_or_else(bad)?))
+            .map(|_| vec![]),
     }
 }
 
@@ -313,16 +585,28 @@ const CF_NUMBER_SINT64: isize = 4;
 #[link(name = "IOKit", kind = "framework")]
 unsafe extern "C" {
     fn IOServiceMatching(name: *const c_char) -> *mut c_void;
-    fn IOServiceGetMatchingServices(main_port: u32, matching: *mut c_void, existing: *mut u32) -> i32;
+    fn IOServiceGetMatchingServices(
+        main_port: u32,
+        matching: *mut c_void,
+        existing: *mut u32,
+    ) -> i32;
     fn IOIteratorNext(iterator: u32) -> u32;
     fn IOObjectRelease(object: u32) -> i32;
-    fn IORegistryEntryCreateCFProperty(entry: u32, key: *const c_void, allocator: *const c_void, options: u32)
-        -> *const c_void;
+    fn IORegistryEntryCreateCFProperty(
+        entry: u32,
+        key: *const c_void,
+        allocator: *const c_void,
+        options: u32,
+    ) -> *const c_void;
 }
 
 #[link(name = "CoreFoundation", kind = "framework")]
 unsafe extern "C" {
-    fn CFStringCreateWithCString(allocator: *const c_void, s: *const c_char, encoding: u32) -> *const c_void;
+    fn CFStringCreateWithCString(
+        allocator: *const c_void,
+        s: *const c_char,
+        encoding: u32,
+    ) -> *const c_void;
     fn CFNumberGetValue(number: *const c_void, the_type: isize, value: *mut c_void) -> bool;
     fn CFRelease(cf: *const c_void);
 }
@@ -343,12 +627,25 @@ struct AuthorizationItemSet {
 
 #[link(name = "Security", kind = "framework")]
 unsafe extern "C" {
-    fn AuthorizationCreate(rights: *const AuthorizationItemSet, environment: *const AuthorizationItemSet,
-                           flags: u32, authorization: *mut *mut c_void) -> i32;
-    fn AuthorizationCopyRights(authorization: *mut c_void, rights: *const AuthorizationItemSet,
-                               environment: *const AuthorizationItemSet, flags: u32,
-                               authorized: *mut *mut AuthorizationItemSet) -> i32;
-    fn AuthorizationExecuteWithPrivileges(authorization: *mut c_void, path: *const c_char, options: u32,
-                                          arguments: *const *const c_char, pipe: *mut *mut libc::FILE) -> i32;
+    fn AuthorizationCreate(
+        rights: *const AuthorizationItemSet,
+        environment: *const AuthorizationItemSet,
+        flags: u32,
+        authorization: *mut *mut c_void,
+    ) -> i32;
+    fn AuthorizationCopyRights(
+        authorization: *mut c_void,
+        rights: *const AuthorizationItemSet,
+        environment: *const AuthorizationItemSet,
+        flags: u32,
+        authorized: *mut *mut AuthorizationItemSet,
+    ) -> i32;
+    fn AuthorizationExecuteWithPrivileges(
+        authorization: *mut c_void,
+        path: *const c_char,
+        options: u32,
+        arguments: *const *const c_char,
+        pipe: *mut *mut libc::FILE,
+    ) -> i32;
     fn AuthorizationFree(authorization: *mut c_void, flags: u32) -> i32;
 }

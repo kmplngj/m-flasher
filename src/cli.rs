@@ -17,6 +17,8 @@ const USAGE: &str = "usage: m-flasher [find | info | backup [DIR] | restore BACK
                  firmware PACKAGE.fwsc [--with-bootloader] [--wipe-settings] |
                  bootloader [--stock PACKAGE.fwsc | --file UBOOT.boot]]
        options: --device PATH  --board fm1|smk37  --backup-dir DIR  --yes
+       reader-check --help: bounded experimental read-only RAM-reader check
+       raw-backup --help: two fresh complete raw reads and protected copies
        without arguments: the window";
 
 pub fn default_backup_dir() -> PathBuf {
@@ -60,6 +62,13 @@ fn read(path: &str) -> Result<Vec<u8>, Error> {
 }
 
 pub fn run(args: Vec<String>) -> i32 {
+    if args.first().map(String::as_str) == Some("raw-backup") {
+        return crate::fmr_backup_cli::run(&args[1..]);
+    }
+    // Keep the qualification path completely outside Connection::start/Session.
+    if args.first().map(String::as_str) == Some("reader-check") {
+        return crate::fmr_cli::run(&args[1..]);
+    }
     match main(args) {
         Ok(()) => 0,
         Err(e) => {

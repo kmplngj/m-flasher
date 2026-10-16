@@ -13,6 +13,48 @@ mod cli;
 mod controller;
 mod fonts;
 mod formats;
+mod fmr_bootstrap;
+mod fmr_bot;
+mod fmr_cli;
+mod fmr_options;
+mod fmr_reader;
+mod fmr_ipc;
+mod fmr_full;
+mod fmr_job_guard;
+mod fmr_storage;
+mod fmr_backup_cli;
+mod fmr_backup_options;
+mod fmr_backup_ipc;
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+mod fmr_backup_pipe;
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+mod fmr_backup_exchange;
+#[cfg(all(test, any(target_os = "macos", target_os = "linux")))]
+#[path = "../tests/support/fmr_backup_exchange.rs"]
+mod fmr_backup_exchange_tests;
+#[cfg(test)]
+#[path = "../tests/support/fmr_full.rs"]
+mod fmr_full_tests;
+#[cfg(test)]
+#[path = "../tests/support/fmr_backup_options.rs"]
+mod fmr_backup_options_tests;
+#[cfg(test)]
+#[path = "../tests/support/fmr_backup_ipc.rs"]
+mod fmr_backup_ipc_tests;
+#[cfg(test)]
+#[path = "../tests/support/fmr_ipc.rs"]
+mod fmr_ipc_tests;
+#[cfg(all(feature = "reader-qualification", not(any(test, feature = "offline-tests")), any(target_os = "macos", all(target_os = "linux", feature = "usb"))))]
+mod fmr_native;
+#[cfg(test)]
+#[path = "../tests/support/fmr_reader.rs"]
+mod fmr_reader_tests;
+#[cfg(test)]
+#[path = "../tests/support/fmr_bot.rs"]
+mod fmr_bot_tests;
+#[cfg(test)]
+#[path = "../tests/support/fmr_options.rs"]
+mod fmr_options_tests;
 mod jl;
 mod ops;
 mod scsi;
@@ -29,6 +71,16 @@ mod wordmark;
 
 fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
+    #[cfg(all(feature = "reader-qualification", not(any(test, feature = "offline-tests")), target_os = "macos"))]
+    if args.first().map(String::as_str) == Some(scsi::macos::FMR_BACKUP_HELPER) {
+        if args.len() != 1 { std::process::exit(2); }
+        std::process::exit(scsi::macos::backup_helper());
+    }
+    #[cfg(all(feature = "reader-qualification", not(any(test, feature = "offline-tests")), target_os = "macos"))]
+    if args.first().map(String::as_str) == Some(scsi::macos::FMR_HELPER) {
+        if args.len() != 1 { std::process::exit(2); }
+        std::process::exit(scsi::macos::reader_helper());
+    }
     // macOS: the root helper the app starts to reach the unit
     #[cfg(all(not(any(test, feature = "offline-tests")), target_os = "macos"))]
     if args.first().map(String::as_str) == Some(scsi::macos::USB_HELPER) {

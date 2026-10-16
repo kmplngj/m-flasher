@@ -57,8 +57,13 @@ def main(argv=None):
     output.mkdir(parents=True, exist_ok=True)
     harness = output / "harness.rs"
     modules = {name: root / "src" / (name + ".rs")
-               for name in ("scsi", "formats", "boards", "sectormap", "jl")}
+               for name in ("scsi", "formats", "boards", "sectormap", "jl",
+                            "fmr_reader", "fmr_bot", "fmr_options", "fmr_ipc",
+                            "fmr_backup_options", "fmr_backup_ipc", "fmr_job_guard")}
     modules["offline_formats"] = root / "tests" / "support" / "offline_formats.rs"
+    for name in ("fmr_reader", "fmr_bot", "fmr_options", "fmr_ipc",
+                 "fmr_backup_options", "fmr_backup_ipc"):
+        modules[name + "_tests"] = root / "tests" / "support" / (name + ".rs")
     # JSON string quoting is also valid for these Rust path string literals.
     source = "#![forbid(unsafe_code)]\n#![allow(dead_code, unused_imports)]\n"
     for name, path in modules.items():
