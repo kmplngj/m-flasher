@@ -192,10 +192,10 @@ mod native {
     }
 
     impl Receipt {
-        fn verify(&self, destination: &Destination) -> Result<(), String> {
+        fn verify(&self, directory: &File) -> Result<(), String> {
             regular_private(&self.file, self.identity)?;
             let mut reopened = open_at(
-                destination.directory.as_raw_fd(),
+                directory.as_raw_fd(),
                 &literal(self.name),
                 libc::O_RDONLY,
                 0,
@@ -324,9 +324,16 @@ mod native {
         Ok(m)
     }
     fn create_private(directory: &File, name: &str) -> Result<File, String> {
+        if !matches!(
+            Path::new(name).components().collect::<Vec<_>>().as_slice(),
+            [std::path::Component::Normal(_)]
+        ) {
+            return Err("private output filename must be one normal component".into());
+        }
+        let name = c_name(std::ffi::OsStr::new(name))?;
         let file = open_at(
             directory.as_raw_fd(),
-            &literal(name),
+            &name,
             libc::O_RDWR | libc::O_CREAT | libc::O_EXCL,
             0o600,
         )?;
@@ -375,34 +382,163 @@ mod native {
         out
     }
 
-    impl Destination {
-        fn prepare(path: &Path) -> Result<Self, String> {
+    fn prepare_directory(path: &Path) -> Result<(File, Identity), String> {
+        if !path.is_absolute() {
+            return Err("storage destinations must be absolute".into());
+        }
+        let parent_path = path
+            .parent()
+            .ok_or("storage destination needs an existing parent")?;
+        let name = path
+            .file_name()
+            .ok_or("storage destination must be a new named directory")?;
+        let parent = open_directory(parent_path)?;
+        let name = c_name(name)?;
+        if unsafe { libc::mkdirat(parent.as_raw_fd(), name.as_ptr(), 0o700) } != 0 {
+            return Err(error("exclusive storage directory creation"));
+        }
+        let directory = open_at(
+            parent.as_raw_fd(),
+            &name,
+            libc::O_RDONLY | libc::O_DIRECTORY,
+            0,
+        )?;
+        clear_new_acl(&directory)?;
+        if unsafe { libc::fchmod(directory.as_raw_fd(), 0o700) } != 0 {
+            return Err(error("private directory permissions"));
+        }
+        let identity = Identity::of(&private_directory(&directory)?);
+        sync_directory(&parent)?;
+        check_directory(path, &directory, identity)?;
+        Ok((directory, identity))
+    }
+
+    fn check_directory(path: &Path, directory: &File, identity: Identity) -> Result<(), String> {
+        if Identity::of(&private_directory(directory)?) != identity {
+            return Err("storage directory identity changed".into());
+        }
+        let reopened = open_directory(path)?;
+        if Identity::of(&private_directory(&reopened)?) != identity {
+            return Err("storage directory pathname changed".into());
+        }
+        Ok(())
+    }
+
+    /// New local output directory for small private receipts and samples.
+    /// Uses the same descriptor-relative creation and ACL checks as backups.
+    /// Write failures are terminal; retained partial files are never overwritten.
+    pub struct PrivateOutputDirectory {
+        path: PathBuf,
+        directory: File,
+        identity: Identity,
+        files: Vec<Receipt>,
+        terminal: bool,
+        #[cfg(test)]
+        before_write: Option<fn(&File, &Path)>,
+    }
+
+    impl PrivateOutputDirectory {
+        /// File-only validation shared by CLI prepare and run. Reserves nothing;
+        /// prepare repeats the checks and exclusively creates the directory.
+        pub fn preflight(path: &Path) -> Result<(), String> {
             if !path.is_absolute() {
                 return Err("storage destinations must be absolute".into());
             }
-            let parent_path = path
-                .parent()
-                .ok_or("storage destination needs an existing parent")?;
-            let name = path
-                .file_name()
-                .ok_or("storage destination must be a new named directory")?;
-            let parent = open_directory(parent_path)?;
-            let name = c_name(name)?;
-            if unsafe { libc::mkdirat(parent.as_raw_fd(), name.as_ptr(), 0o700) } != 0 {
-                return Err(error("exclusive storage directory creation"));
+            let parent = open_directory(path.parent().ok_or("output parent missing")?)?;
+            let name = c_name(path.file_name().ok_or("output needs a named directory")?)?;
+            let mut metadata = std::mem::MaybeUninit::<libc::stat>::uninit();
+            // SAFETY: fstatat only queries this named local filesystem entry;
+            // the output storage is valid and need not be read afterward.
+            let result = unsafe {
+                libc::fstatat(
+                    parent.as_raw_fd(),
+                    name.as_ptr(),
+                    metadata.as_mut_ptr(),
+                    libc::AT_SYMLINK_NOFOLLOW,
+                )
+            };
+            if result == 0 {
+                return Err("output directory must be new".into());
             }
-            let directory = open_at(
-                parent.as_raw_fd(),
-                &name,
-                libc::O_RDONLY | libc::O_DIRECTORY,
+            let error = std::io::Error::last_os_error();
+            if error.kind() != std::io::ErrorKind::NotFound {
+                return Err(format!("private output preflight: {error}"));
+            }
+            Ok(())
+        }
+
+        pub fn prepare(path: &Path) -> Result<Self, String> {
+            let (directory, identity) = prepare_directory(path)?;
+            let output = Self {
+                path: path.to_owned(),
+                directory,
+                identity,
+                files: Vec::new(),
+                terminal: false,
+                #[cfg(test)]
+                before_write: None,
+            };
+            output.check()?;
+            Ok(output)
+        }
+
+        pub fn check(&self) -> Result<(), String> {
+            if self.terminal {
+                return Err("private output cannot be reused after failure".into());
+            }
+            check_directory(&self.path, &self.directory, self.identity)?;
+            for file in &self.files {
+                file.verify(&self.directory)?;
+            }
+            check_directory(&self.path, &self.directory, self.identity)
+        }
+
+        pub fn write_private(&mut self, name: &'static str, bytes: &[u8]) -> Result<(), String> {
+            let result = self.write_inner(name, bytes);
+            if result.is_err() {
+                self.terminal = true;
+            }
+            result
+        }
+
+        fn write_inner(&mut self, name: &'static str, bytes: &[u8]) -> Result<(), String> {
+            self.check()?;
+            let mut file = create_private(&self.directory, name)?;
+            let identity = Identity::of(&file.metadata().map_err(|e| e.to_string())?);
+            #[cfg(test)]
+            if let Some(before_write) = self.before_write.take() {
+                before_write(&file, &self.path.join(name));
+            }
+            // Recheck the directory and new pathname before any private bytes.
+            // ACL clearing only touches newly created, still-empty descriptors.
+            self.check()?;
+            let reopened = open_at(
+                self.directory.as_raw_fd(),
+                &literal(name),
+                libc::O_RDONLY,
                 0,
             )?;
-            clear_new_acl(&directory)?;
-            if unsafe { libc::fchmod(directory.as_raw_fd(), 0o700) } != 0 {
-                return Err(error("private directory permissions"));
-            }
-            let identity = Identity::of(&private_directory(&directory)?);
-            sync_directory(&parent)?;
+            regular_private(&reopened, identity)?;
+            regular_private(&file, identity)?;
+            file.write_all(bytes)
+                .map_err(|e| format!("private output write: {e}"))?;
+            sync_file(&file)?;
+            sync_directory(&self.directory)?;
+            let saved = Receipt {
+                file,
+                identity,
+                name,
+                bytes: bytes.to_vec(),
+            };
+            saved.verify(&self.directory)?;
+            self.files.push(saved);
+            self.check()
+        }
+    }
+
+    impl Destination {
+        fn prepare(path: &Path) -> Result<Self, String> {
+            let (directory, identity) = prepare_directory(path)?;
             let raw = create_private(&directory, RAW_NAME)?;
             let raw_identity = Identity::of(&raw.metadata().map_err(|e| e.to_string())?);
             let destination = Self {
@@ -418,14 +554,7 @@ mod native {
             Ok(destination)
         }
         fn check(&self) -> Result<(), String> {
-            let held = private_directory(&self.directory)?;
-            if Identity::of(&held) != self.identity {
-                return Err("storage directory identity changed".into());
-            }
-            let path = open_directory(&self.path)?;
-            if Identity::of(&private_directory(&path)?) != self.identity {
-                return Err("storage directory pathname changed".into());
-            }
+            check_directory(&self.path, &self.directory, self.identity)?;
             regular_private(&self.raw, self.raw_identity)?;
             let reopened = open_at(
                 self.directory.as_raw_fd(),
@@ -515,7 +644,7 @@ mod native {
                 name,
                 bytes: bytes.to_owned(),
             };
-            saved.verify(self)?;
+            saved.verify(&self.directory)?;
             Ok(saved)
         }
     }
@@ -564,8 +693,8 @@ mod native {
             self.first.check()?;
             self.second.check()?;
             if let Some((first, second)) = &self.receipts {
-                first.verify(&self.first)?;
-                second.verify(&self.second)?;
+                first.verify(&self.first.directory)?;
+                second.verify(&self.second.directory)?;
             }
             if self.started.elapsed() >= BUDGET {
                 return Err("storage lifecycle exceeded its ten-minute budget".into());
@@ -730,8 +859,8 @@ mod native {
             self.check()?;
             let second = self.second.receipt(CAPTURE_NAME, receipt.as_bytes())?;
             self.check()?;
-            first.verify(&self.first)?;
-            second.verify(&self.second)?;
+            first.verify(&self.first.directory)?;
+            second.verify(&self.second.directory)?;
             self.check()?;
             Ok(())
         }
@@ -777,6 +906,169 @@ mod native {
         fn no_capture(pair: &PreparedPair) {
             assert!(!pair.first.path.join(CAPTURE_NAME).exists());
             assert!(!pair.second.path.join(CAPTURE_NAME).exists());
+        }
+        #[test]
+        fn private_output_reopens_all_four_files_and_never_overwrites() {
+            let fixture = Fixture::new();
+            let path = fixture.0.join("small-check");
+            let mut output = PrivateOutputDirectory::prepare(&path).unwrap();
+            for (name, bytes) in [
+                (
+                    "started.json",
+                    b"{\"serial\":\"private-fixture\"}".as_slice(),
+                ),
+                ("first-256.bin", [0x19; 256].as_slice()),
+                ("second-256.bin", [0x19; 256].as_slice()),
+                (
+                    "result.json",
+                    b"{\"state\":\"two-equal-samples\"}".as_slice(),
+                ),
+            ] {
+                output.write_private(name, bytes).unwrap();
+                assert_eq!(std::fs::read(path.join(name)).unwrap(), bytes);
+                let metadata = std::fs::metadata(path.join(name)).unwrap();
+                assert_eq!(metadata.mode() & 0o7777, 0o600);
+                assert_eq!(metadata.nlink(), 1);
+            }
+            output.check().unwrap();
+            assert_eq!(std::fs::metadata(&path).unwrap().mode() & 0o7777, 0o700);
+            assert!(PrivateOutputDirectory::prepare(&path).is_err());
+            assert!(
+                output
+                    .write_private("started.json", b"replacement")
+                    .is_err()
+            );
+            assert!(output.write_private("later.json", b"private").is_err());
+            assert!(!path.join("later.json").exists());
+        }
+
+        #[test]
+        fn private_output_refuses_unsafe_names_and_symlink_paths() {
+            let fixture = Fixture::new();
+            symlink(&fixture.0, fixture.0.join("alias")).unwrap();
+            assert!(PrivateOutputDirectory::prepare(&fixture.0.join("alias/output")).is_err());
+            for (i, name) in ["../escape", "/absolute", "sub/name", "", ".", "bad\0name"]
+                .into_iter()
+                .enumerate()
+            {
+                let mut output =
+                    PrivateOutputDirectory::prepare(&fixture.0.join(format!("out-{i}"))).unwrap();
+                assert!(output.write_private(name, b"private").is_err(), "{name:?}");
+                assert_eq!(std::fs::read_dir(&output.path).unwrap().count(), 0);
+            }
+            assert!(!fixture.0.join("escape").exists());
+        }
+
+        #[test]
+        fn private_output_refuses_directory_and_saved_file_substitution_before_next_bytes() {
+            for directory in [true, false] {
+                let fixture = Fixture::new();
+                let path = fixture.0.join("output");
+                let mut output = PrivateOutputDirectory::prepare(&path).unwrap();
+                output
+                    .write_private("started.json", b"private fixture")
+                    .unwrap();
+                if directory {
+                    std::fs::rename(&path, fixture.0.join("original")).unwrap();
+                    std::fs::create_dir(&path).unwrap();
+                    std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o700))
+                        .unwrap();
+                } else {
+                    let saved = path.join("started.json");
+                    std::fs::rename(&saved, path.join("original.json")).unwrap();
+                    symlink(path.join("original.json"), &saved).unwrap();
+                }
+                assert!(output.write_private("first-256.bin", &[0x31; 256]).is_err());
+                assert!(!path.join("first-256.bin").exists());
+                assert!(!fixture.0.join("original/first-256.bin").exists());
+            }
+        }
+
+        #[test]
+        fn private_output_refuses_new_file_substitution_before_writing() {
+            let fixture = Fixture::new();
+            let path = fixture.0.join("output");
+            let mut output = PrivateOutputDirectory::prepare(&path).unwrap();
+            output.before_write = Some(|_, path| {
+                std::fs::rename(path, path.with_extension("held")).unwrap();
+                std::fs::write(path, []).unwrap();
+                std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o600)).unwrap();
+            });
+            assert!(
+                output
+                    .write_private("started.json", b"private identifier")
+                    .is_err()
+            );
+            assert_eq!(
+                std::fs::metadata(path.join("started.held")).unwrap().len(),
+                0
+            );
+            assert_eq!(
+                std::fs::metadata(path.join("started.json")).unwrap().len(),
+                0
+            );
+        }
+
+        #[cfg(target_os = "macos")]
+        #[test]
+        fn private_output_clears_inherited_everyone_acl_and_preserves_parent_acl() {
+            let fixture = Fixture::new();
+            let parent = open_directory(&fixture.0).unwrap();
+            darwin_acl::add_fixture_grant(&parent);
+            let mut output = PrivateOutputDirectory::prepare(&fixture.0.join("output")).unwrap();
+            for name in [
+                "started.json",
+                "first-256.bin",
+                "second-256.bin",
+                "result.json",
+            ] {
+                output.write_private(name, b"private fixture").unwrap();
+            }
+            output.check().unwrap();
+            empty_acl(&output.directory).unwrap();
+            for saved in &output.files {
+                empty_acl(&saved.file).unwrap();
+            }
+            assert!(empty_acl(&parent).is_err());
+        }
+
+        #[cfg(target_os = "macos")]
+        #[test]
+        fn private_output_refuses_postcreation_acls_before_private_bytes() {
+            for target in ["directory", "saved", "new"] {
+                let fixture = Fixture::new();
+                let mut output =
+                    PrivateOutputDirectory::prepare(&fixture.0.join("output")).unwrap();
+                match target {
+                    "directory" => darwin_acl::add_fixture_grant(&output.directory),
+                    "saved" => {
+                        output
+                            .write_private("started.json", b"private fixture")
+                            .unwrap();
+                        darwin_acl::add_fixture_grant(&output.files[0].file);
+                    }
+                    "new" => {
+                        output.before_write = Some(|file, _| darwin_acl::add_fixture_grant(file))
+                    }
+                    _ => unreachable!(),
+                }
+                assert!(
+                    output.write_private("first-256.bin", &[0x71; 256]).is_err(),
+                    "{target}"
+                );
+                if target == "new" {
+                    assert_eq!(
+                        std::fs::metadata(output.path.join("first-256.bin"))
+                            .unwrap()
+                            .len(),
+                        0
+                    );
+                } else {
+                    assert!(!output.path.join("first-256.bin").exists());
+                }
+                assert!(output.write_private("result.json", b"private").is_err());
+                assert!(!output.path.join("result.json").exists());
+            }
         }
         #[test]
         fn private_two_passes_reopen_and_separate_acceptance() {
@@ -1079,7 +1371,7 @@ mod native {
 }
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]
-pub use native::PreparedPair;
+pub use native::{PreparedPair, PrivateOutputDirectory};
 
 // Refuse unsupported persistence rather than falling back to ordinary writes.
 #[cfg(not(any(target_os = "macos", target_os = "linux")))]
@@ -1096,4 +1388,23 @@ impl PreparedPair {
         Err("protected backup persistence is unsupported on this OS".into())
     }
     pub fn cancel(&mut self) {}
+}
+
+// Small private outputs have the same fail-closed platform boundary as backups.
+#[cfg(not(any(target_os = "macos", target_os = "linux")))]
+pub struct PrivateOutputDirectory;
+#[cfg(not(any(target_os = "macos", target_os = "linux")))]
+impl PrivateOutputDirectory {
+    pub fn preflight(_: &Path) -> Result<(), String> {
+        Err("protected private output is unsupported on this OS".into())
+    }
+    pub fn prepare(_: &Path) -> Result<Self, String> {
+        Err("protected private output is unsupported on this OS".into())
+    }
+    pub fn check(&self) -> Result<(), String> {
+        Err("protected private output is unsupported on this OS".into())
+    }
+    pub fn write_private(&mut self, _: &'static str, _: &[u8]) -> Result<(), String> {
+        Err("protected private output is unsupported on this OS".into())
+    }
 }

@@ -132,10 +132,19 @@ observations exist, `stock_return` stays pending even if both samples match.
 
 ## Private results and tests
 
-The command creates a new mode-0700 directory and mode-0600 files on Unix:
-`started.json`, `first-256.bin`, `second-256.bin`, `result.json`. Files are synced;
-sample files are reopened and compared. These are private samples of one region,
-not full independent recovery copies. Do not publish them or device identifiers.
+The command uses the shared protected storage primitives on macOS/Linux for a
+new mode-0700 directory and mode-0600 files: `started.json`, `first-256.bin`,
+`second-256.bin`, `result.json`. Descriptor-relative exclusive creation refuses
+symlinks; ownership, modes, link counts and identities are checked. Inherited
+macOS ACLs are cleared only on newly created, empty objects, then verified empty
+before private bytes. Later ACL grants or pathname substitutions stop the check.
+The protected starting receipt is persisted and revalidated before native open.
+Both modes resolve relative output paths against the current working directory
+without following symlinks, reject `..` components, and validate the existing
+parent and absent leaf before reporting preparation success.
+All files are synced, reopened and compared; unsupported platforms refuse this
+persistence. These are private samples of one region, not full independent
+recovery copies. Do not publish them or device identifiers.
 
 Independent fixtures cover exact bootstrap/cipher/CRC framing, every short and
 error boundary, CSW corruption, deadline expiry, metadata/status/counter changes,
@@ -143,6 +152,10 @@ sample mismatches, terminal reuse, bounded helper IPC and regular-file preflight
 The frozen artifact mutation suite is separate from host tests. Offline checks
 do not establish physical startup, real chip identity, sample freshness or stock
 return; retain the actual session outcome separately.
+
+The shared private-output hardening is a later offline host change. The frozen
+reader image is unchanged; the physical observation below identifies its tested
+host build and does not qualify this newer host source or its filesystem handling.
 
 ## First selected physical result
 

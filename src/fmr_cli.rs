@@ -3,9 +3,9 @@
 use crate::fmr_bootstrap::{self, IMAGE_LEN, IMAGE_SHA256, Image};
 use crate::fmr_options::{self, Command, Options};
 use sha2::{Digest, Sha256};
-use std::fs::{self, File, OpenOptions};
-use std::io::{Read, Write};
-use std::path::Path;
+use std::fs::{self, OpenOptions};
+use std::io::Read;
+use std::path::{Component, Path, PathBuf};
 
 pub const USAGE: &str = "m-flasher reader-check (--prepare | --run) --reader IMAGE.bin \
     --device usb:BUS-ADDRESS --location 03110000 --serial STOCK_SERIAL --output NEW_DIRECTORY\n\
@@ -31,14 +31,16 @@ pub fn run(args: &[String]) -> i32 {
 
 fn execute(args: &[String]) -> Result<(), String> {
     let command = fmr_options::parse(args)?;
-    let (options, run) = match command {
+    let (mut options, run) = match command {
         Command::Prepare(options) => (options, false),
         Command::Run(options) => (options, true),
     };
+    options.output = resolve_output(
+        &options.output,
+        &std::env::current_dir().map_err(|e| format!("output working directory: {e}"))?,
+    )?;
     let image = load_image(&options.reader)?;
-    if options.output.try_exists().map_err(|e| e.to_string())? {
-        return Err("output directory must be new".into());
-    }
+    crate::fmr_storage::PrivateOutputDirectory::preflight(&options.output)?;
     if !run {
         println!(
             "Prepared exact FMR1 image {IMAGE_SHA256}; selected {}, location {:08X}. No devices accessed.",
@@ -47,6 +49,27 @@ fn execute(args: &[String]) -> Result<(), String> {
         return Ok(());
     }
     run_selected(options, image)
+}
+
+fn resolve_output(path: &Path, working_directory: &Path) -> Result<PathBuf, String> {
+    let absolute = if path.is_absolute() {
+        path.to_owned()
+    } else {
+        working_directory.join(path)
+    };
+    let mut resolved = PathBuf::new();
+    for component in absolute.components() {
+        match component {
+            Component::ParentDir => {
+                return Err("output path cannot contain parent components".into());
+            }
+            Component::CurDir => {}
+            component => resolved.push(component.as_os_str()),
+        }
+    }
+    // No canonicalization: a symlink ancestor remains visible to the secure
+    // storage walk, which applies the same no-follow policy in both modes.
+    Ok(resolved)
 }
 
 pub(crate) fn load_image(path: &Path) -> Result<Image, String> {
@@ -80,7 +103,7 @@ pub(crate) fn load_image(path: &Path) -> Result<Image, String> {
 fn run_selected(options: Options, image: Image) -> Result<(), String> {
     use crate::fmr_native::Selection;
 
-    private_directory(&options.output)?;
+    let mut output = crate::fmr_storage::PrivateOutputDirectory::prepare(&options.output)?;
     let base = format!(
         "\"schema\":1,\"kind\":\"bounded-reader-check\",\"reader_sha256\":{},\"stock_serial_label\":{},\"device\":{},\"location\":{},\"stock_return\":\"pending-manual-cold-return-and-fresh-identity\",\"full_backup\":false",
         quote(IMAGE_SHA256),
@@ -88,10 +111,12 @@ fn run_selected(options: Options, image: Image) -> Result<(), String> {
         quote(&options.device),
         quote(&format!("{:08X}", options.location))
     );
-    write_private(
-        &options.output.join("started.json"),
+    output.write_private(
+        "started.json",
         format!("{{{base},\"state\":\"starting\"}}\n").as_bytes(),
     )?;
+    // Persist and revalidate private identifiers before native device access.
+    output.check()?;
     let result: Result<(String, String), String> = (|| {
         let selection = Selection {
             device: options.device.clone(),
@@ -107,14 +132,8 @@ fn run_selected(options: Options, image: Image) -> Result<(), String> {
             .iter()
             .map(|byte| format!("{byte:02x}"))
             .collect();
-        write_private(&options.output.join("first-256.bin"), &read.first)?;
-        write_private(&options.output.join("second-256.bin"), &read.second)?;
-        for name in ["first-256.bin", "second-256.bin"] {
-            let reopened = fs::read(options.output.join(name)).map_err(|e| e.to_string())?;
-            if reopened.as_slice() != read.first {
-                return Err("saved sample failed reopen verification".into());
-            }
-        }
+        output.write_private("first-256.bin", &read.first)?;
+        output.write_private("second-256.bin", &read.second)?;
         Ok((digest, binding))
     })();
     let (state, extra) = match &result {
@@ -128,8 +147,8 @@ fn run_selected(options: Options, image: Image) -> Result<(), String> {
         ),
         Err(error) => ("stopped", format!(",\"error\":{}", quote(error))),
     };
-    write_private(
-        &options.output.join("result.json"),
+    output.write_private(
+        "result.json",
         format!("{{{base},\"state\":{}{extra}}}\n", quote(state)).as_bytes(),
     )?;
     result?;
@@ -203,42 +222,10 @@ pub(crate) fn quote(value: &str) -> String {
     quoted
 }
 
-fn private_directory(path: &Path) -> Result<(), String> {
-    let mut builder = fs::DirBuilder::new();
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::DirBuilderExt;
-        builder.mode(0o700);
-    }
-    builder
-        .create(path)
-        .map_err(|e| format!("new private output directory: {e}"))
-}
-
-fn write_private(path: &Path, bytes: &[u8]) -> Result<(), String> {
-    let mut options = OpenOptions::new();
-    options.write(true).create_new(true);
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::OpenOptionsExt;
-        options.mode(0o600);
-    }
-    let mut file = options
-        .open(path)
-        .map_err(|e| format!("private receipt file: {e}"))?;
-    file.write_all(bytes)
-        .and_then(|()| file.sync_all())
-        .map_err(|e| e.to_string())?;
-    #[cfg(unix)]
-    File::open(path.parent().ok_or("output parent missing")?)
-        .and_then(|directory| directory.sync_all())
-        .map_err(|e| e.to_string())?;
-    Ok(())
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fs::File;
 
     #[test]
     fn help_does_not_require_reader_files() {
@@ -259,7 +246,9 @@ mod tests {
                 std::process::id(),
                 NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
             ));
-            private_directory(&path).unwrap();
+            // Plain file-preflight fixtures also run on platforms where
+            // protected native output is intentionally unsupported.
+            fs::create_dir(&path).unwrap();
             Self(path)
         }
 
@@ -333,5 +322,72 @@ mod tests {
     #[test]
     fn receipt_strings_escape_quotes_and_controls() {
         assert_eq!(quote("a\n\"\\"), "\"a\\u000a\\\"\\\\\"");
+    }
+
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    #[test]
+    fn documented_relative_output_passes_preflight_and_protected_creation_without_native() {
+        let scratch = Scratch::new();
+        // Canonicalize only the synthetic fixture's base, never user output.
+        let base = scratch.0.canonicalize().unwrap();
+        fs::create_dir(base.join("target")).unwrap();
+        let expected = base.join("target/private-read-result");
+        let resolved = resolve_output(Path::new("./target/private-read-result"), &base).unwrap();
+        assert_eq!(resolved, expected);
+        assert_eq!(resolve_output(&expected, &base).unwrap(), expected);
+        crate::fmr_storage::PrivateOutputDirectory::preflight(&resolved).unwrap();
+        assert!(!resolved.exists(), "preflight must not create output");
+        let mut output = crate::fmr_storage::PrivateOutputDirectory::prepare(&resolved).unwrap();
+        output
+            .write_private("started.json", b"private fixture")
+            .unwrap();
+        output.check().unwrap();
+        assert_eq!(
+            fs::read(expected.join("started.json")).unwrap(),
+            b"private fixture"
+        );
+    }
+
+    #[test]
+    fn parent_output_components_are_refused_in_both_modes_before_file_loading() {
+        for mode in ["--prepare", "--run"] {
+            for output in ["target/../private-read-result", "../private-read-result"] {
+                let args: Vec<String> = [
+                    mode,
+                    "--reader",
+                    "missing-fixture-reader.bin",
+                    "--device",
+                    "usb:3-7",
+                    "--location",
+                    "03110000",
+                    "--serial",
+                    "0123456789ABCDEF",
+                    "--output",
+                    output,
+                ]
+                .into_iter()
+                .map(String::from)
+                .collect();
+                let error = execute(&args).unwrap_err();
+                assert!(
+                    error.contains("output path cannot contain parent components"),
+                    "{mode}: {error}"
+                );
+            }
+        }
+    }
+
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    #[test]
+    fn shared_output_preflight_refuses_symlink_ancestors_without_creating_output() {
+        use std::os::unix::fs::symlink;
+        let scratch = Scratch::new();
+        let base = scratch.0.canonicalize().unwrap();
+        fs::create_dir(base.join("real")).unwrap();
+        symlink(base.join("real"), base.join("alias")).unwrap();
+        let resolved = resolve_output(Path::new("alias/private-read-result"), &base).unwrap();
+        assert_eq!(resolved, base.join("alias/private-read-result"));
+        assert!(crate::fmr_storage::PrivateOutputDirectory::preflight(&resolved).is_err());
+        assert!(!base.join("real/private-read-result").exists());
     }
 }
