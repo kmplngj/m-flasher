@@ -1,0 +1,1001 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-16",
+  "repository": "kmplngj/m-flasher",
+  "reference": "Prior FM1-001 through FM1-034 goals; reference reports are research inputs, not runtime authority.",
+  "baseline_commit": "9d962747437d92cbab594c2320b586d162c6572d",
+  "publication_verification": {
+    "count": 19,
+    "method": "GET reread and exact title/body SHA-256 comparison after full research/coverage reconciliation on 2026-10-16. This is a publication snapshot; subsequent issue updates are recorded on GitHub.",
+    "duplicates": false
+  },
+  "candidate_status": {
+    "minimal_ram_reader": "Implemented locally on init; two byte-identical offline builds, hosted ASan/UBSan fake-core/MMIO tests, 37 artifact mutation tests and independent static review pass. Source unpublished; no strict runtime integration or physical qualification.",
+    "strict_runtime_integration": false,
+    "physical_qualification": false,
+    "development_hardware_access": false
+  },
+  "disposition_counts": {
+    "already-parity": 2,
+    "gap-covered": 26,
+    "deferred-alternative": 6
+  },
+  "issues": [
+    {
+      "number": 1,
+      "url": "https://github.com/kmplngj/m-flasher/issues/1",
+      "title": "Deliver the FM-1 backup and development workflow in this fork",
+      "kind": "umbrella",
+      "body_sha256": "d1064cde10c2a7186bf8021623f911f8be34cf6c3df8f33b7a9a4e097842ea4c",
+      "depends_on": [],
+      "logical_key": "00"
+    },
+    {
+      "number": 2,
+      "url": "https://github.com/kmplngj/m-flasher/issues/2",
+      "title": "Prevent hardware access in offline tests and add independent failure fixtures",
+      "kind": "focused",
+      "body_sha256": "4ba18f23fd1251c10eb7e0faa8df46d884cdef2f0b7a030dad1c796ea485c27c",
+      "depends_on": [],
+      "logical_key": "01"
+    },
+    {
+      "number": 3,
+      "url": "https://github.com/kmplngj/m-flasher/issues/3",
+      "title": "Finish the minimal read-only RAM reader artifact",
+      "kind": "focused",
+      "body_sha256": "a0abfd1fdecf78c2fd1ebdd7ff4d4e17c5ad8b46cd717eec603713719ecaccf2",
+      "depends_on": [
+        2
+      ],
+      "logical_key": "02"
+    },
+    {
+      "number": 4,
+      "url": "https://github.com/kmplngj/m-flasher/issues/4",
+      "title": "Validate every selected BOT and SCSI transaction without automatic recovery",
+      "kind": "focused",
+      "body_sha256": "f0f82dbfa533cae8ce4955e18d7d75bc777249be8fcd64c35dda890eaa0a69b3",
+      "depends_on": [
+        2
+      ],
+      "logical_key": "03"
+    },
+    {
+      "number": 5,
+      "url": "https://github.com/kmplngj/m-flasher/issues/5",
+      "title": "Connect the exact RAM reader through a strict host profile",
+      "kind": "focused",
+      "body_sha256": "2e288e4a4a4f395d1a6efff41a758834e3376a79010b5e632270c5e6ab328c6f",
+      "depends_on": [
+        2,
+        3,
+        4
+      ],
+      "logical_key": "04"
+    },
+    {
+      "number": 6,
+      "url": "https://github.com/kmplngj/m-flasher/issues/6",
+      "title": "Identify one running FM-1 without entering update mode",
+      "kind": "focused",
+      "body_sha256": "99e89771da2094b401c96242878ecddc281564e86ce09c3ecd94880f0e1f51a2",
+      "depends_on": [
+        2
+      ],
+      "logical_key": "05"
+    },
+    {
+      "number": 7,
+      "url": "https://github.com/kmplngj/m-flasher/issues/7",
+      "title": "Define exact stock-to-ROM entry and original-stock return",
+      "kind": "focused",
+      "body_sha256": "0c5f993f510e3a0c926e807ce4e68ae4c31ad47d304a4a424d5504dee3809e5f",
+      "depends_on": [
+        4,
+        6
+      ],
+      "logical_key": "06"
+    },
+    {
+      "number": 8,
+      "url": "https://github.com/kmplngj/m-flasher/issues/8",
+      "title": "Qualify a small RAM-reader read-and-return session",
+      "kind": "focused",
+      "body_sha256": "663f3a6b19e5d99859cb9b022c5314acee738172216996ae43fc643542d5d012",
+      "depends_on": [
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "logical_key": "07"
+    },
+    {
+      "number": 9,
+      "url": "https://github.com/kmplngj/m-flasher/issues/9",
+      "title": "Capture two fresh complete raw flash passes",
+      "kind": "focused",
+      "body_sha256": "8ba676dc542eb69b8d71676fbb0fdaedcd52cb397692df52b2fd6a6cc951751f",
+      "depends_on": [
+        2,
+        5
+      ],
+      "logical_key": "08",
+      "physical_activation_gates": [
+        8
+      ]
+    },
+    {
+      "number": 10,
+      "url": "https://github.com/kmplngj/m-flasher/issues/10",
+      "title": "Save two protected independent backup copies and verify them after reopening",
+      "kind": "focused",
+      "body_sha256": "9462c75d7a0008fb9b431c39009f25d1e8396d86755706f3ae9781c6a00cd772",
+      "depends_on": [
+        2,
+        9
+      ],
+      "logical_key": "09"
+    },
+    {
+      "number": 11,
+      "url": "https://github.com/kmplngj/m-flasher/issues/11",
+      "title": "Inspect saved dumps and produce sanitized recovery diagnostics offline",
+      "kind": "focused",
+      "body_sha256": "2eda6f88acceed42af0e146a8964c90a8db83a8a2574d5d693eaa9736d8d85a5",
+      "depends_on": [
+        2
+      ],
+      "logical_key": "10",
+      "integration_inputs": [
+        10
+      ]
+    },
+    {
+      "number": 12,
+      "url": "https://github.com/kmplngj/m-flasher/issues/12",
+      "title": "Export firmware with presets, firmware only, or presets only",
+      "kind": "focused",
+      "body_sha256": "69adbe905b16815f539e197b8ecd79207467b169a56abbf19336bf5beb97f49d",
+      "depends_on": [
+        10,
+        11,
+        13
+      ],
+      "logical_key": "11"
+    },
+    {
+      "number": 13,
+      "url": "https://github.com/kmplngj/m-flasher/issues/13",
+      "title": "Qualify exact firmware transitions and persisted-data compatibility",
+      "kind": "focused",
+      "body_sha256": "fb985f2e31a51dbd43c0d9b3ddc2f9cdfde478f070b225a3de75c7618caf1b97",
+      "depends_on": [
+        2,
+        11
+      ],
+      "logical_key": "12"
+    },
+    {
+      "number": 14,
+      "url": "https://github.com/kmplngj/m-flasher/issues/14",
+      "title": "Enforce application-only immutable plans and full-image verification",
+      "kind": "focused",
+      "body_sha256": "d500c3c46ac3cf0cd7cba8ca1357c364db46c2b21a85299e41bd1b41d2f51b11",
+      "depends_on": [
+        9,
+        10,
+        13
+      ],
+      "logical_key": "13",
+      "physical_activation_gates": [
+        16
+      ]
+    },
+    {
+      "number": 15,
+      "url": "https://github.com/kmplngj/m-flasher/issues/15",
+      "title": "Decide and qualify a direct USB-MIDI installer",
+      "kind": "focused",
+      "body_sha256": "54aeed6947e4bba7b27bd3db77ea774132c9291d32459bed9242aaf7d7d70ab7",
+      "depends_on": [
+        2,
+        13,
+        14
+      ],
+      "logical_key": "14",
+      "physical_activation_gates": [
+        16
+      ]
+    },
+    {
+      "number": 16,
+      "url": "https://github.com/kmplngj/m-flasher/issues/16",
+      "title": "Qualify recovery and writer failures on a separate external unit",
+      "kind": "focused",
+      "body_sha256": "b7c0ac1370f74f507269c336c1951b281e32c1898de4162aae496ea3491e79f0",
+      "depends_on": [
+        13,
+        14
+      ],
+      "logical_key": "15"
+    },
+    {
+      "number": 17,
+      "url": "https://github.com/kmplngj/m-flasher/issues/17",
+      "title": "Define a machine-readable agent lifecycle and fresh build health checks",
+      "kind": "focused",
+      "body_sha256": "d90c70c36e150b299b4867e5216d40ee0072b11e1dddc3b501e0128a999962dd",
+      "depends_on": [
+        2,
+        10,
+        13,
+        14
+      ],
+      "logical_key": "16",
+      "physical_activation_gates": [
+        16
+      ]
+    },
+    {
+      "number": 18,
+      "url": "https://github.com/kmplngj/m-flasher/issues/18",
+      "title": "Ship a small CLI with explicit capabilities and artifact provenance",
+      "kind": "focused",
+      "body_sha256": "15bd57ef8f8a971c824af75dd19332cfe197b137fd0cbf146c299023ada5e22d",
+      "depends_on": [
+        2,
+        11
+      ],
+      "logical_key": "17"
+    },
+    {
+      "number": 19,
+      "url": "https://github.com/kmplngj/m-flasher/issues/19",
+      "title": "Add an optional web frontend after the CLI contract is released",
+      "kind": "focused",
+      "body_sha256": "51ecfb8a23e273e72ae0dfb47c7c2c100bc490a44bab8e182132bb4db8938272",
+      "depends_on": [
+        12,
+        13,
+        18
+      ],
+      "logical_key": "18",
+      "conditional_physical_gates": {
+        "browser_writer": [
+          16
+        ]
+      }
+    }
+  ],
+  "coverage": [
+    {
+      "old_ticket": "FM1-001",
+      "prior_goal": "Fork/project foundation",
+      "disposition": "already-parity",
+      "existing_parity": "The selected fork and native application already exist.",
+      "remaining_gap_or_optional_scope": "Fork and native project already exist; do not recreate the Transporter/Python foundation.",
+      "issues": [
+        {
+          "number": 1,
+          "url": "https://github.com/kmplngj/m-flasher/issues/1",
+          "title": "Deliver the FM-1 backup and development workflow in this fork"
+        }
+      ]
+    },
+    {
+      "old_ticket": "FM1-002",
+      "prior_goal": "Pinned provenance and transition profiles",
+      "disposition": "gap-covered",
+      "existing_parity": "Cargo/build metadata and loader source exist; exact safety profiles remain a delta.",
+      "remaining_gap_or_optional_scope": "Bind current artifact/profile/source/toolchain provenance instead of duplicating old catalog.",
+      "issues": [
+        {
+          "number": 3,
+          "url": "https://github.com/kmplngj/m-flasher/issues/3",
+          "title": "Finish the minimal read-only RAM reader artifact"
+        },
+        {
+          "number": 13,
+          "url": "https://github.com/kmplngj/m-flasher/issues/13",
+          "title": "Qualify exact firmware transitions and persisted-data compatibility"
+        },
+        {
+          "number": 18,
+          "url": "https://github.com/kmplngj/m-flasher/issues/18",
+          "title": "Ship a small CLI with explicit capabilities and artifact provenance"
+        }
+      ]
+    },
+    {
+      "old_ticket": "FM1-003",
+      "prior_goal": "Package parsing and raw-region extraction",
+      "disposition": "gap-covered",
+      "existing_parity": "src/formats.rs and src/boards.rs already parse and analyze firmware.",
+      "remaining_gap_or_optional_scope": "Reuse formats/board parsing; add exact representation/offset/layout oracles.",
+      "issues": [
+        {
+          "number": 2,
+          "url": "https://github.com/kmplngj/m-flasher/issues/2",
+          "title": "Prevent hardware access in offline tests and add independent failure fixtures"
+        },
+        {
+          "number": 11,
+          "url": "https://github.com/kmplngj/m-flasher/issues/11",
+          "title": "Inspect saved dumps and produce sanitized recovery diagnostics offline"
+        },
+        {
+          "number": 13,
+          "url": "https://github.com/kmplngj/m-flasher/issues/13",
+          "title": "Qualify exact firmware transitions and persisted-data compatibility"
+        }
+      ]
+    },
+    {
+      "old_ticket": "FM1-004",
+      "prior_goal": "Independent parser and malformed corpus",
+      "disposition": "gap-covered",
+      "existing_parity": "src/tests.rs already tests current parser/NOR behavior.",
+      "remaining_gap_or_optional_scope": "Extend existing tests with independent malformed/corpus fixtures and explicit private-corpus gaps.",
+      "issues": [
+        {
+          "number": 2,
+          "url": "https://github.com/kmplngj/m-flasher/issues/2",
+          "title": "Prevent hardware access in offline tests and add independent failure fixtures"
+        }
+      ]
+    },
+    {
+      "old_ticket": "FM1-005",
+      "prior_goal": "Device-pull MIDI codec and replay",
+      "disposition": "gap-covered",
+      "existing_parity": "Existing ROM command transport is not a running-app MIDI OTA codec.",
+      "remaining_gap_or_optional_scope": "Source-specific device-pull codec/transcripts remain a retained MIDI-route delta.",
+      "issues": [
+        {
+          "number": 2,
+          "url": "https://github.com/kmplngj/m-flasher/issues/2",
+          "title": "Prevent hardware access in offline tests and add independent failure fixtures"
+        },
+        {
+          "number": 15,
+          "url": "https://github.com/kmplngj/m-flasher/issues/15",
+          "title": "Decide and qualify a direct USB-MIDI installer"
+        }
+      ]
+    },
+    {
+      "old_ticket": "FM1-006",
+      "prior_goal": "NOR and recovery fault model",
+      "disposition": "gap-covered",
+      "existing_parity": "FakeFlash and the Flash trait already model basic NOR operations.",
+      "remaining_gap_or_optional_scope": "Reuse FakeFlash; extend deterministic tear/corruption/cut-point and external recovery evidence.",
+      "issues": [
+        {
+          "number": 2,
+          "url": "https://github.com/kmplngj/m-flasher/issues/2",
+          "title": "Prevent hardware access in offline tests and add independent failure fixtures"
+        },
+        {
+          "number": 14,
+          "url": "https://github.com/kmplngj/m-flasher/issues/14",
+          "title": "Enforce application-only immutable plans and full-image verification"
+        },
+        {
+          "number": 16,
+          "url": "https://github.com/kmplngj/m-flasher/issues/16",
+          "title": "Qualify recovery and writer failures on a separate external unit"
+        }
+      ]
+    },
+    {
+      "old_ticket": "FM1-007",
+      "prior_goal": "Immutable plans and safety policy",
+      "disposition": "gap-covered",
+      "existing_parity": "Plan::new/runs already compute differential allowed-sector work.",
+      "remaining_gap_or_optional_scope": "Existing Plan/diff is parity; strict immutable binding and repeated execution bounds remain.",
+      "issues": [
+        {
+          "number": 13,
+          "url": "https://github.com/kmplngj/m-flasher/issues/13",
+          "title": "Qualify exact firmware transitions and persisted-data compatibility"
+        },
+        {
+          "number": 14,
+          "url": "https://github.com/kmplngj/m-flasher/issues/14",
+          "title": "Enforce application-only immutable plans and full-image verification"
+        }
+      ]
+    },
+    {
+      "old_ticket": "FM1-008",
+      "prior_goal": "Offline inspect/plan/simulate CLI",
+      "disposition": "gap-covered",
+      "existing_parity": "src/cli.rs already provides the native CLI.",
+      "remaining_gap_or_optional_scope": "Existing native CLI is parity; expose guarded file-only inspect/plan/fault simulation rather than another CLI.",
+      "issues": [
+        {
+          "number": 2,
+          "url": "https://github.com/kmplngj/m-flasher/issues/2",
+          "title": "Prevent hardware access in offline tests and add independent failure fixtures"
+        },
+        {
+          "number": 11,
+          "url": "https://github.com/kmplngj/m-flasher/issues/11",
+          "title": "Inspect saved dumps and produce sanitized recovery diagnostics offline"
+        },
+        {
+          "number": 14,
+          "url": "https://github.com/kmplngj/m-flasher/issues/14",
+          "title": "Enforce application-only immutable plans and full-image verification"
+        },
+        {
+          "number": 18,
+          "url": "https://github.com/kmplngj/m-flasher/issues/18",
+          "title": "Ship a small CLI with explicit capabilities and artifact provenance"
+        }
+      ]
+    },
+    {
+      "old_ticket": "FM1-009",
+      "prior_goal": "Explicit Transporter serial reads",
+      "disposition": "deferred-alternative",
+      "existing_parity": "Existing USB/SCSI access is the selected native route; serial Transporter is optional.",
+      "remaining_gap_or_optional_scope": "Transporter serial route is an optional separately qualified emergency/browser alternative; direct existing native USB is first-backup priority.",
+      "issues": [
+        {
+          "number": 4,
+          "url": "https://github.com/kmplngj/m-flasher/issues/4",
+          "title": "Validate every selected BOT and SCSI transaction without automatic recovery"
+        },
+        {
+          "number": 16,
+          "url": "https://github.com/kmplngj/m-flasher/issues/16",
+          "title": "Qualify recovery and writer failures on a separate external unit"
+        },
+        {
+          "number": 19,
+          "url": "https://github.com/kmplngj/m-flasher/issues/19",
+          "title": "Add an optional web frontend after the CLI contract is released"
+        }
+      ]
+    },
+    {
+      "old_ticket": "FM1-010",
+      "prior_goal": "Verified persistence and job records",
+      "disposition": "gap-covered",
+      "existing_parity": "Session::open/save_backup already read and save full flash.",
+      "remaining_gap_or_optional_scope": "Reuse full reads and save_backup; add two fresh passes, protected durable independent copies and receipts.",
+      "issues": [
+        {
+          "number": 9,
+          "url": "https://github.com/kmplngj/m-flasher/issues/9",
+          "title": "Capture two fresh complete raw flash passes"
+        },
+        {
+          "number": 10,
+          "url": "https://github.com/kmplngj/m-flasher/issues/10",
+          "title": "Save two protected independent backup copies and verify them after reopening"
+        },
+        {
+          "number": 17,
+          "url": "https://github.com/kmplngj/m-flasher/issues/17",
+          "title": "Define a machine-readable agent lifecycle and fresh build health checks"
+        }
+      ]
+    },
+    {
+      "old_ticket": "FM1-011",
+      "prior_goal": "Saved-dump diagnosis and recovery routing",
+      "disposition": "gap-covered",
+      "existing_parity": "Analysis and sector-map code already identify known regions.",
+      "remaining_gap_or_optional_scope": "Reuse Analysis/sector map; add sanitized file-only diagnosis and exact blocked recovery reasons.",
+      "issues": [
+        {
+          "number": 11,
+          "url": "https://github.com/kmplngj/m-flasher/issues/11",
+          "title": "Inspect saved dumps and produce sanitized recovery diagnostics offline"
+        },
+        {
+          "number": 13,
+          "url": "https://github.com/kmplngj/m-flasher/issues/13",
+          "title": "Qualify exact firmware transitions and persisted-data compatibility"
+        }
+      ]
+    },
+    {
+      "old_ticket": "FM1-012",
+      "prior_goal": "Kit commissioning and first backup",
+      "disposition": "gap-covered",
+      "existing_parity": "Existing native ROM backup and recovery documentation are reused.",
+      "remaining_gap_or_optional_scope": "Separate narrow unchanged-stock read/return from later full capture and optional emergency-kit commissioning.",
+      "issues": [
+        {
+          "number": 6,
+          "url": "https://github.com/kmplngj/m-flasher/issues/6",
+          "title": "Identify one running FM-1 without entering update mode"
+        },
+        {
+          "number": 7,
+          "url": "https://github.com/kmplngj/m-flasher/issues/7",
+          "title": "Define exact stock-to-ROM entry and original-stock return"
+        },
+        {
+          "number": 8,
+          "url": "https://github.com/kmplngj/m-flasher/issues/8",
+          "title": "Qualify a small RAM-reader read-and-return session"
+        },
+        {
+          "number": 9,
+          "url": "https://github.com/kmplngj/m-flasher/issues/9",
+          "title": "Capture two fresh complete raw flash passes"
+        },
+        {
+          "number": 10,
+          "url": "https://github.com/kmplngj/m-flasher/issues/10",
+          "title": "Save two protected independent backup copies and verify them after reopening"
+        },
+        {
+          "number": 16,
+          "url": "https://github.com/kmplngj/m-flasher/issues/16",
+          "title": "Qualify recovery and writer failures on a separate external unit"
+        }
+      ]
+    },
+    {
+      "old_ticket": "FM1-013",
+      "prior_goal": "Bounded Transporter writer model",
+      "disposition": "deferred-alternative",
+      "existing_parity": "The current native writer already computes and applies sector differences.",
+      "remaining_gap_or_optional_scope": "Existing native differential writer is reused; Transporter-specific bridge writer is optional, not a duplicate mandatory implementation.",
+      "issues": [
+        {
+          "number": 14,
+          "url": "https://github.com/kmplngj/m-flasher/issues/14",
+          "title": "Enforce application-only immutable plans and full-image verification"
+        },
+        {
+          "number": 16,
+          "url": "https://github.com/kmplngj/m-flasher/issues/16",
+          "title": "Qualify recovery and writer failures on a separate external unit"
+        }
+      ]
+    },
+    {
+      "old_ticket": "FM1-014",
+      "prior_goal": "Virtual-device MIDI updater",
+      "disposition": "gap-covered",
+      "existing_parity": "Current firmware installation uses ROM; MIDI OTA is a distinct optional route.",
+      "remaining_gap_or_optional_scope": "Optional MIDI OTA needs source-specific codec/side-effects/preboot verification and external qualification.",
+      "issues": [
+        {
+          "number": 2,
+          "url": "https://github.com/kmplngj/m-flasher/issues/2",
+          "title": "Prevent hardware access in offline tests and add independent failure fixtures"
+        },
+        {
+          "number": 15,
+          "url": "https://github.com/kmplngj/m-flasher/issues/15",
+          "title": "Decide and qualify a direct USB-MIDI installer"
+        },
+        {
+          "number": 16,
+          "url": "https://github.com/kmplngj/m-flasher/issues/16",
+          "title": "Qualify recovery and writer failures on a separate external unit"
+        }
+      ]
+    },
+    {
+      "old_ticket": "FM1-015",
+      "prior_goal": "Direct transitions and rollback",
+      "disposition": "gap-covered",
+      "existing_parity": "Basic restore and firmware planning already exist.",
+      "remaining_gap_or_optional_scope": "Reuse restore/differential planning; exact direct edges/rollback/data evidence remain gated.",
+      "issues": [
+        {
+          "number": 13,
+          "url": "https://github.com/kmplngj/m-flasher/issues/13",
+          "title": "Qualify exact firmware transitions and persisted-data compatibility"
+        },
+        {
+          "number": 14,
+          "url": "https://github.com/kmplngj/m-flasher/issues/14",
+          "title": "Enforce application-only immutable plans and full-image verification"
+        },
+        {
+          "number": 16,
+          "url": "https://github.com/kmplngj/m-flasher/issues/16",
+          "title": "Qualify recovery and writer failures on a separate external unit"
+        }
+      ]
+    },
+    {
+      "old_ticket": "FM1-016",
+      "prior_goal": "Platform packaging and adapters",
+      "disposition": "gap-covered",
+      "existing_parity": "Native adapters, platform packaging and a build workflow already exist.",
+      "remaining_gap_or_optional_scope": "Platform packages/adapters exist; qualify selected access/storage/signing and supported capabilities.",
+      "issues": [
+        {
+          "number": 4,
+          "url": "https://github.com/kmplngj/m-flasher/issues/4",
+          "title": "Validate every selected BOT and SCSI transaction without automatic recovery"
+        },
+        {
+          "number": 10,
+          "url": "https://github.com/kmplngj/m-flasher/issues/10",
+          "title": "Save two protected independent backup copies and verify them after reopening"
+        },
+        {
+          "number": 18,
+          "url": "https://github.com/kmplngj/m-flasher/issues/18",
+          "title": "Ship a small CLI with explicit capabilities and artifact provenance"
+        }
+      ]
+    },
+    {
+      "old_ticket": "FM1-017",
+      "prior_goal": "External recovery/write qualification",
+      "disposition": "gap-covered",
+      "existing_parity": "Other-device write/recovery reports do not qualify the stricter FM-1 policy.",
+      "remaining_gap_or_optional_scope": "External exact-edge writer/recovery/cut-point qualification, never the sole owner unit.",
+      "issues": [
+        {
+          "number": 16,
+          "url": "https://github.com/kmplngj/m-flasher/issues/16",
+          "title": "Qualify recovery and writer failures on a separate external unit"
+        }
+      ]
+    },
+    {
+      "old_ticket": "FM1-018",
+      "prior_goal": "Selective CLI release",
+      "disposition": "gap-covered",
+      "existing_parity": "An existing Rust executable and packages can ship selected capabilities.",
+      "remaining_gap_or_optional_scope": "Selective CLI release can ship offline/read-only capabilities without blanket writer/all-OS requirements.",
+      "issues": [
+        {
+          "number": 18,
+          "url": "https://github.com/kmplngj/m-flasher/issues/18",
+          "title": "Ship a small CLI with explicit capabilities and artifact provenance"
+        }
+      ]
+    },
+    {
+      "old_ticket": "FM1-019",
+      "prior_goal": "Direct USB ROM SCSI/BOT routes",
+      "disposition": "gap-covered",
+      "existing_parity": "src/usb.rs, src/scsi.rs and src/macos.rs already implement native access.",
+      "remaining_gap_or_optional_scope": "Existing native BOT/SCSI replaces exploratory reimplementation; qualify strict selected route/access.",
+      "issues": [
+        {
+          "number": 4,
+          "url": "https://github.com/kmplngj/m-flasher/issues/4",
+          "title": "Validate every selected BOT and SCSI transaction without automatic recovery"
+        },
+        {
+          "number": 5,
+          "url": "https://github.com/kmplngj/m-flasher/issues/5",
+          "title": "Connect the exact RAM reader through a strict host profile"
+        },
+        {
+          "number": 7,
+          "url": "https://github.com/kmplngj/m-flasher/issues/7",
+          "title": "Define exact stock-to-ROM entry and original-stock return"
+        },
+        {
+          "number": 8,
+          "url": "https://github.com/kmplngj/m-flasher/issues/8",
+          "title": "Qualify a small RAM-reader read-and-return session"
+        }
+      ]
+    },
+    {
+      "old_ticket": "FM1-020",
+      "prior_goal": "Browser feasibility/shared contracts",
+      "disposition": "deferred-alternative",
+      "existing_parity": "Native GUI/core exist; browser access is a different optional surface.",
+      "remaining_gap_or_optional_scope": "Browser feasibility/shared contracts remain optional step2 after released CLI.",
+      "issues": [
+        {
+          "number": 19,
+          "url": "https://github.com/kmplngj/m-flasher/issues/19",
+          "title": "Add an optional web frontend after the CLI contract is released"
+        }
+      ]
+    },
+    {
+      "old_ticket": "FM1-021",
+      "prior_goal": "Browser offline/backup frontend",
+      "disposition": "deferred-alternative",
+      "existing_parity": "Native GUI/core exist; browser backup is not yet implemented.",
+      "remaining_gap_or_optional_scope": "Browser offline/backup frontend remains optional step2, sharing core contracts.",
+      "issues": [
+        {
+          "number": 19,
+          "url": "https://github.com/kmplngj/m-flasher/issues/19",
+          "title": "Add an optional web frontend after the CLI contract is released"
+        }
+      ]
+    },
+    {
+      "old_ticket": "FM1-022",
+      "prior_goal": "Browser write/recovery qualification",
+      "disposition": "deferred-alternative",
+      "existing_parity": "Current native writing does not establish browser recovery.",
+      "remaining_gap_or_optional_scope": "Browser writing/recovery requires actual retained-route external and browser qualification.",
+      "issues": [
+        {
+          "number": 16,
+          "url": "https://github.com/kmplngj/m-flasher/issues/16",
+          "title": "Qualify recovery and writer failures on a separate external unit"
+        },
+        {
+          "number": 19,
+          "url": "https://github.com/kmplngj/m-flasher/issues/19",
+          "title": "Add an optional web frontend after the CLI contract is released"
+        }
+      ]
+    },
+    {
+      "old_ticket": "FM1-023",
+      "prior_goal": "Selective firmware/preset exports",
+      "disposition": "gap-covered",
+      "existing_parity": "Whole raw backup and region labels exist; selective archives are distinct.",
+      "remaining_gap_or_optional_scope": "Three explicit selective archive modes remain separate from full raw recovery copies.",
+      "issues": [
+        {
+          "number": 12,
+          "url": "https://github.com/kmplngj/m-flasher/issues/12",
+          "title": "Export firmware with presets, firmware only, or presets only"
+        },
+        {
+          "number": 13,
+          "url": "https://github.com/kmplngj/m-flasher/issues/13",
+          "title": "Qualify exact firmware transitions and persisted-data compatibility"
+        }
+      ]
+    },
+    {
+      "old_ticket": "FM1-024",
+      "prior_goal": "Agent lifecycle contract/harness",
+      "disposition": "gap-covered",
+      "existing_parity": "CLI/controller progress exists; machine authority and health states remain a delta.",
+      "remaining_gap_or_optional_scope": "Machine-readable lifecycle/authority/budget contracts remain an optional bounded agent workflow.",
+      "issues": [
+        {
+          "number": 17,
+          "url": "https://github.com/kmplngj/m-flasher/issues/17",
+          "title": "Define a machine-readable agent lifecycle and fresh build health checks"
+        }
+      ]
+    },
+    {
+      "old_ticket": "FM1-025",
+      "prior_goal": "Build identity and firmware health",
+      "disposition": "gap-covered",
+      "existing_parity": "Firmware version strings exist but cannot prove fresh exact-build health.",
+      "remaining_gap_or_optional_scope": "Fresh nonce/build health and reviewed firmware manifest/hooks remain separately scoped.",
+      "issues": [
+        {
+          "number": 17,
+          "url": "https://github.com/kmplngj/m-flasher/issues/17",
+          "title": "Define a machine-readable agent lifecycle and fresh build health checks"
+        }
+      ]
+    },
+    {
+      "old_ticket": "FM1-026",
+      "prior_goal": "External agent cycle qualification",
+      "disposition": "deferred-alternative",
+      "existing_parity": "Current read/other-device reports do not enroll an external agent bench.",
+      "remaining_gap_or_optional_scope": "Physical agent loop requires enrolled external spare and independent executor authority.",
+      "issues": [
+        {
+          "number": 16,
+          "url": "https://github.com/kmplngj/m-flasher/issues/16",
+          "title": "Qualify recovery and writer failures on a separate external unit"
+        },
+        {
+          "number": 17,
+          "url": "https://github.com/kmplngj/m-flasher/issues/17",
+          "title": "Define a machine-readable agent lifecycle and fresh build health checks"
+        }
+      ]
+    },
+    {
+      "old_ticket": "FM1-027",
+      "prior_goal": "Native Rust CLI foundation",
+      "disposition": "already-parity",
+      "existing_parity": "The native Rust CLI foundation already exists.",
+      "remaining_gap_or_optional_scope": "Rust CLI foundation exists; retain it and address only lean-build/release deltas.",
+      "issues": [
+        {
+          "number": 18,
+          "url": "https://github.com/kmplngj/m-flasher/issues/18",
+          "title": "Ship a small CLI with explicit capabilities and artifact provenance"
+        }
+      ]
+    },
+    {
+      "old_ticket": "FM1-028",
+      "prior_goal": "Rust package and wire codecs",
+      "disposition": "gap-covered",
+      "existing_parity": "Rust package parsing exists; retain only independent oracle and selected codec gaps.",
+      "remaining_gap_or_optional_scope": "Rust parser exists; transfer independent malformed/offset oracles and only retained wire-codec gaps.",
+      "issues": [
+        {
+          "number": 2,
+          "url": "https://github.com/kmplngj/m-flasher/issues/2",
+          "title": "Prevent hardware access in offline tests and add independent failure fixtures"
+        },
+        {
+          "number": 11,
+          "url": "https://github.com/kmplngj/m-flasher/issues/11",
+          "title": "Inspect saved dumps and produce sanitized recovery diagnostics offline"
+        },
+        {
+          "number": 15,
+          "url": "https://github.com/kmplngj/m-flasher/issues/15",
+          "title": "Decide and qualify a direct USB-MIDI installer"
+        }
+      ]
+    },
+    {
+      "old_ticket": "FM1-029",
+      "prior_goal": "Rust profiles and transition planning",
+      "disposition": "gap-covered",
+      "existing_parity": "Rust restore/firmware planning and model/key checks already exist.",
+      "remaining_gap_or_optional_scope": "Rust planning exists; qualify exact immutable profiles/data and application-only executor policy.",
+      "issues": [
+        {
+          "number": 13,
+          "url": "https://github.com/kmplngj/m-flasher/issues/13",
+          "title": "Qualify exact firmware transitions and persisted-data compatibility"
+        },
+        {
+          "number": 14,
+          "url": "https://github.com/kmplngj/m-flasher/issues/14",
+          "title": "Enforce application-only immutable plans and full-image verification"
+        }
+      ]
+    },
+    {
+      "old_ticket": "FM1-030",
+      "prior_goal": "Rust backup and fake writer",
+      "disposition": "gap-covered",
+      "existing_parity": "Rust full reads, basic restore, FakeFlash and differential writes already exist.",
+      "remaining_gap_or_optional_scope": "Reuse Rust full reads/restore/FakeFlash/diff; transfer protected persistence and strict writer gaps.",
+      "issues": [
+        {
+          "number": 2,
+          "url": "https://github.com/kmplngj/m-flasher/issues/2",
+          "title": "Prevent hardware access in offline tests and add independent failure fixtures"
+        },
+        {
+          "number": 9,
+          "url": "https://github.com/kmplngj/m-flasher/issues/9",
+          "title": "Capture two fresh complete raw flash passes"
+        },
+        {
+          "number": 10,
+          "url": "https://github.com/kmplngj/m-flasher/issues/10",
+          "title": "Save two protected independent backup copies and verify them after reopening"
+        },
+        {
+          "number": 11,
+          "url": "https://github.com/kmplngj/m-flasher/issues/11",
+          "title": "Inspect saved dumps and produce sanitized recovery diagnostics offline"
+        },
+        {
+          "number": 14,
+          "url": "https://github.com/kmplngj/m-flasher/issues/14",
+          "title": "Enforce application-only immutable plans and full-image verification"
+        }
+      ]
+    },
+    {
+      "old_ticket": "FM1-031",
+      "prior_goal": "Rust agent lifecycle",
+      "disposition": "gap-covered",
+      "existing_parity": "The current Rust core can host the lifecycle; no language port foundation is needed.",
+      "remaining_gap_or_optional_scope": "No Python-to-Rust foundation rewrite; implement lifecycle on current Rust core if selected.",
+      "issues": [
+        {
+          "number": 17,
+          "url": "https://github.com/kmplngj/m-flasher/issues/17",
+          "title": "Define a machine-readable agent lifecycle and fresh build health checks"
+        }
+      ]
+    },
+    {
+      "old_ticket": "FM1-032",
+      "prior_goal": "Native artifact/release qualification",
+      "disposition": "gap-covered",
+      "existing_parity": "Platform packages and build workflow already exist.",
+      "remaining_gap_or_optional_scope": "Reuse packaging; add measured lean CLI/provenance/installed offline smoke and scoped platform facts.",
+      "issues": [
+        {
+          "number": 18,
+          "url": "https://github.com/kmplngj/m-flasher/issues/18",
+          "title": "Ship a small CLI with explicit capabilities and artifact provenance"
+        }
+      ]
+    },
+    {
+      "old_ticket": "FM1-033",
+      "prior_goal": "Unchanged-stock full raw USB-C backup",
+      "disposition": "gap-covered",
+      "existing_parity": "The fork already reads full flash; unchanged-stock strict acquisition/acceptance is the delta.",
+      "remaining_gap_or_optional_scope": "Prioritize minimal source reader and exact stock entry/read/return, then two fresh raw passes/two copies; preserve existing raw dumper.",
+      "issues": [
+        {
+          "number": 3,
+          "url": "https://github.com/kmplngj/m-flasher/issues/3",
+          "title": "Finish the minimal read-only RAM reader artifact"
+        },
+        {
+          "number": 4,
+          "url": "https://github.com/kmplngj/m-flasher/issues/4",
+          "title": "Validate every selected BOT and SCSI transaction without automatic recovery"
+        },
+        {
+          "number": 5,
+          "url": "https://github.com/kmplngj/m-flasher/issues/5",
+          "title": "Connect the exact RAM reader through a strict host profile"
+        },
+        {
+          "number": 6,
+          "url": "https://github.com/kmplngj/m-flasher/issues/6",
+          "title": "Identify one running FM-1 without entering update mode"
+        },
+        {
+          "number": 7,
+          "url": "https://github.com/kmplngj/m-flasher/issues/7",
+          "title": "Define exact stock-to-ROM entry and original-stock return"
+        },
+        {
+          "number": 8,
+          "url": "https://github.com/kmplngj/m-flasher/issues/8",
+          "title": "Qualify a small RAM-reader read-and-return session"
+        },
+        {
+          "number": 9,
+          "url": "https://github.com/kmplngj/m-flasher/issues/9",
+          "title": "Capture two fresh complete raw flash passes"
+        },
+        {
+          "number": 10,
+          "url": "https://github.com/kmplngj/m-flasher/issues/10",
+          "title": "Save two protected independent backup copies and verify them after reopening"
+        },
+        {
+          "number": 11,
+          "url": "https://github.com/kmplngj/m-flasher/issues/11",
+          "title": "Inspect saved dumps and produce sanitized recovery diagnostics offline"
+        }
+      ]
+    },
+    {
+      "old_ticket": "FM1-034",
+      "prior_goal": "Running-stock identity only",
+      "disposition": "gap-covered",
+      "existing_parity": "Current info/ROM paths do not provide a running-stock identity-only operation.",
+      "remaining_gap_or_optional_scope": "Identity-only running-stock command remains separate from ROM, entry and backup authority.",
+      "issues": [
+        {
+          "number": 6,
+          "url": "https://github.com/kmplngj/m-flasher/issues/6",
+          "title": "Identify one running FM-1 without entering update mode"
+        }
+      ]
+    }
+  ],
+  "dependency_semantics": {
+    "depends_on": "Offline implementation/integration prerequisites; no hardware authority.",
+    "integration_inputs": "Contracts or receipt formats reused when composing features; independent fixtures may precede them.",
+    "physical_activation_gates": "Separate selected-operation physical evidence; does not block offline development."
+  }
+}
