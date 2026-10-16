@@ -117,13 +117,15 @@
       "url": "https://github.com/kmplngj/m-flasher/issues/9",
       "title": "Capture two fresh complete raw flash passes",
       "kind": "focused",
-      "body_sha256": "e0848a8389fe195aeb3a123c0cb468d96bd9c9735ddfe1352781fb8c128651a1",
+      "body_sha256": "8ba676dc542eb69b8d71676fbb0fdaedcd52cb397692df52b2fd6a6cc951751f",
       "depends_on": [
         2,
-        5,
-        8
+        5
       ],
-      "logical_key": "08"
+      "logical_key": "08",
+      "physical_activation_gates": [
+        8
+      ]
     },
     {
       "number": 10,
@@ -142,12 +144,14 @@
       "url": "https://github.com/kmplngj/m-flasher/issues/11",
       "title": "Inspect saved dumps and produce sanitized recovery diagnostics offline",
       "kind": "focused",
-      "body_sha256": "0cf050d433e4bbe2a5c37ce9678dc2e85f955febeae42444a48e920cebc7f8d1",
+      "body_sha256": "2eda6f88acceed42af0e146a8964c90a8db83a8a2574d5d693eaa9736d8d85a5",
       "depends_on": [
-        2,
-        10
+        2
       ],
-      "logical_key": "10"
+      "logical_key": "10",
+      "integration_inputs": [
+        10
+      ]
     },
     {
       "number": 12,
@@ -185,7 +189,10 @@
         10,
         13
       ],
-      "logical_key": "13"
+      "logical_key": "13",
+      "physical_activation_gates": [
+        16
+      ]
     },
     {
       "number": 15,
@@ -198,7 +205,10 @@
         13,
         14
       ],
-      "logical_key": "14"
+      "logical_key": "14",
+      "physical_activation_gates": [
+        16
+      ]
     },
     {
       "number": 16,
@@ -224,7 +234,10 @@
         13,
         14
       ],
-      "logical_key": "16"
+      "logical_key": "16",
+      "physical_activation_gates": [
+        16
+      ]
     },
     {
       "number": 18,
@@ -249,7 +262,12 @@
         13,
         18
       ],
-      "logical_key": "18"
+      "logical_key": "18",
+      "conditional_physical_gates": {
+        "browser_writer": [
+          16
+        ]
+      }
     }
   ],
   "coverage": [
@@ -974,5 +992,10 @@
         }
       ]
     }
-  ]
+  ],
+  "dependency_semantics": {
+    "depends_on": "Offline implementation/integration prerequisites; no hardware authority.",
+    "integration_inputs": "Contracts or receipt formats reused when composing features; independent fixtures may precede them.",
+    "physical_activation_gates": "Separate selected-operation physical evidence; does not block offline development."
+  }
 }
