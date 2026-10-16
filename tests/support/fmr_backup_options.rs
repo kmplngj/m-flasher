@@ -1,6 +1,16 @@
 //! Pure CLI fixtures; all named paths are deliberately nonexistent.
 use crate::fmr_backup_options::{self, Command};
 
+fn fixture_path(value: &str) -> String {
+    // Windows needs a drive as well as a root. Keep these fixtures lexical:
+    // no drive/directory lookup, creation or device access is performed.
+    if cfg!(windows) && value.starts_with('/') {
+        format!("C:{value}")
+    } else {
+        value.to_owned()
+    }
+}
+
 fn valid() -> Vec<String> {
     [
         "--prepare",
@@ -18,13 +28,17 @@ fn valid() -> Vec<String> {
         "/nonexistent/b",
     ]
     .into_iter()
-    .map(str::to_owned)
+    .map(fixture_path)
     .collect()
 }
 fn with(flag: &str, value: &str) -> Vec<String> {
     let mut args = valid();
     let at = args.iter().position(|v| v == flag).unwrap();
-    args[at + 1] = value.into();
+    args[at + 1] = if matches!(flag, "--reader" | "--copy-a" | "--copy-b") {
+        fixture_path(value)
+    } else {
+        value.into()
+    };
     args
 }
 #[test]
