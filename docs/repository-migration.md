@@ -1,16 +1,16 @@
 # Repository migration, 2026-10-21
 
-**Status:** the source port is prepared. GitHub rejected the repository rename
-with `403 Resource not accessible by integration`; the current credential lacks
-the repository administration permission. The old repository is still
-`kmplngj/m-flasher`, and no fresh fork has been created yet. The steps below
-state the intended resulting layout, pending the owner's repository rename.
-
-The original integration repository will be renamed to
+**Status:** the owner renamed the original repository to
 [`kmplngj/m-flasher-legacy`](https://github.com/kmplngj/m-flasher-legacy).
-It will retain its repository identity, issues, PRs, branches, Actions history and
-historical source. It will remain writable so its two open PRs stay reviewable.
-The canonical work tracker for the existing FM-1 roadmap remains there.
+Its repository ID remains `1422153335`; the existing issues, branches, PRs,
+Actions history and pinned installer commit remain accessible. The legacy
+repository remains writable for the remaining open loader-safety PR.
+The canonical work tracker for the existing FM-1 roadmap stays there.
+
+The source port is staged in that repository. Creating the fresh fork is pending:
+GitHub returned `403 Resource not accessible by integration` for fork creation
+with the current credential. The owner must create the fresh fork before the
+prepared branch can be pushed there and a draft backport PR opened.
 
 [`kmplngj/m-flasher`](https://github.com/kmplngj/m-flasher) will be a fresh GitHub fork
 of the recreated [`jvitkauskas/m-flasher`](https://github.com/jvitkauskas/m-flasher).
@@ -35,9 +35,12 @@ or replace the current upstream bootloader/loader assets with the old ones.
   preserves the safety constraint already required by Felucca's pinned helper;
   it does not mark that PR merged or establish new hardware qualification.
 
-The research archive in [legacy PR 27](https://github.com/kmplngj/m-flasher-legacy/pull/27)
-remains there, as do the unmerged exact-read and exclusive-backup upstream
-candidate branches. Their unrelated changes are not silently integrated.
+The research archive from [legacy PR 27](https://github.com/kmplngj/m-flasher-legacy/pull/27)
+merged into legacy main `aeb061a` during migration and is included in a separate
+port commit. All archive files and their manifest are preserved byte-for-byte;
+only the surrounding roadmap issue link is adapted to the renamed tracker.
+The unmerged exact-read and exclusive-backup upstream candidate branches remain
+in the legacy repository; those proposed behavior changes are not integrated.
 
 ## References and consumers
 
