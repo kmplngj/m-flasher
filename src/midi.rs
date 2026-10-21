@@ -86,7 +86,7 @@ fn asound_cards(text: &str) -> Vec<(u32, String)> {
         .collect()
 }
 
-#[cfg(target_os = "linux")]
+#[cfg(all(not(any(test, feature = "offline-tests")), target_os = "linux"))]
 mod sys {
     use std::fs::{File, OpenOptions};
     use std::io::Write;
@@ -344,7 +344,7 @@ mod sys {
     }
 }
 
-#[cfg(any(windows, target_os = "macos"))]
+#[cfg(all(not(any(test, feature = "offline-tests")), any(windows, target_os = "macos")))]
 mod sys {
     use midir::{MidiOutput, MidiOutputPort};
 
@@ -387,7 +387,7 @@ mod sys {
     }
 }
 
-#[cfg(not(any(target_os = "linux", windows, target_os = "macos")))]
+#[cfg(all(not(any(test, feature = "offline-tests")), not(any(target_os = "linux", windows, target_os = "macos"))))]
 mod sys {
     pub struct Port;
     pub fn units() -> Vec<(String, Port)> {
@@ -425,23 +425,27 @@ mod tests {
         assert!(known("SMK-37 Elite") && known("FM-1") && known("Felucca Update") && !known("HDA Intel PCH"));
     }
 
-    /// On Linux with a sequencer: `aseqdump` (from alsa-utils) shows its port,
-    /// then `MIDI_TEST_PORT=client:port cargo test --release -- --ignored
-    /// sequencer_loopback`; aseqdump prints the system exclusive F0 22 24 35 7D F7.
-    #[cfg(target_os = "linux")]
     #[test]
-    #[ignore]
-    fn sequencer_loopback() {
-        let port = std::env::var("MIDI_TEST_PORT").expect("MIDI_TEST_PORT=client:port");
-        let (c, p) = port.split_once(':').expect("client:port");
-        match sys::seq::send_to_port(c.parse().unwrap(), p.parse().unwrap(), &SOFT_KEY) {
-            Ok(()) => {}
-            Err(e) => panic!("{e}"),
-        }
+    fn soft_key_native_entrypoints_are_denied_offline() {
+        assert!(std::panic::catch_unwind(find_units).is_err());
+        let unit = MidiUnit { name: "FM-1".into(), port: () };
+        assert!(unit.soft_key().unwrap_err().contains("forbidden"));
     }
 
     #[test]
     fn soft_key_bytes() {
         assert_eq!(SOFT_KEY, [0xF0, 0x22, 0x24, 0x35, 0x7D, 0xF7]);
+    }
+}
+
+// The GUI soft-key adapter follows the same offline boundary as ROM and OTA.
+#[cfg(any(test, feature = "offline-tests"))]
+mod sys {
+    pub type Port = ();
+    pub fn units() -> Vec<(String, Port)> {
+        panic!("native MIDI inventory forbidden in offline tests")
+    }
+    pub fn send(_: &Port, _: &[u8]) -> Result<(), String> {
+        Err("native MIDI soft key forbidden in offline tests".into())
     }
 }

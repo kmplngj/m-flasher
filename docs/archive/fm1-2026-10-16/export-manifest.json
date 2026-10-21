@@ -1,0 +1,488 @@
+{
+  "schema": "fm1-sanitized-document-archive-v1",
+  "source_repository": "kmplngj/fm1-flasher",
+  "source_ref": "init",
+  "source_head": "3edc26552b0b16eb972e3aca6dc916fd96203b0c",
+  "remote_init_at_inventory": "c393bd8b8f983d87818262ca849ecb95fe25d34e",
+  "scope": "Markdown research only, including three working-tree documents; no legacy code or raw evidence JSON",
+  "digests": "Only exported text digests below; no device raw-image digests. Rescue review retains public script/loader source digests.",
+  "files": [
+    {
+      "source_path": "specs/01-github-research.md",
+      "source_blob_at_init": "02851def2d0c84da7e03a8e2a5f08dced323ade2",
+      "working_tree_change": false,
+      "export_path": "specs/01-github-research.md",
+      "export_bytes": 60861,
+      "export_sha256": "92680d182840850eda47592eb1d702d4dae7e052da9c4e3d73cb38b7886a24d8",
+      "sanitized": true
+    },
+    {
+      "source_path": "specs/02-cli-and-web-plan.md",
+      "source_blob_at_init": "5f417e1e2170890c04615a78981f7648cbfd165d",
+      "working_tree_change": false,
+      "export_path": "specs/02-cli-and-web-plan.md",
+      "export_bytes": 30078,
+      "export_sha256": "345832f729d45bc507dd4b166ead038ccc7461970d24a47b57d4d9a957225015",
+      "sanitized": true
+    },
+    {
+      "source_path": "specs/03-single-device-safety.md",
+      "source_blob_at_init": "3a518702815bbf422eb7793a2e47b77f631176e5",
+      "working_tree_change": false,
+      "export_path": "specs/03-single-device-safety.md",
+      "export_bytes": 15581,
+      "export_sha256": "874c9fd9591c12fa8dafd36676ea6d999ee376c9197a5bfc112feb0a9be6b48c",
+      "sanitized": false
+    },
+    {
+      "source_path": "specs/04-backlog.md",
+      "source_blob_at_init": "1b4f7e37524206dc4e37f6d5366ee561c2b862f8",
+      "working_tree_change": true,
+      "export_path": "specs/04-backlog.md",
+      "export_bytes": 90020,
+      "export_sha256": "018c9bac1c257d2f27756f5a831f53b6a9f2d2476b9c7d53ed59e593b8641e1d",
+      "sanitized": true
+    },
+    {
+      "source_path": "specs/05-implementation-progress.md",
+      "source_blob_at_init": "dc3403cca1440b97d8d54e77b951ef59fce2d10e",
+      "working_tree_change": false,
+      "export_path": "specs/05-implementation-progress.md",
+      "export_bytes": 123581,
+      "export_sha256": "56d40721b07274e256bd6178e884f76756b43a7b7bf7f2bec747b4639c542577",
+      "sanitized": true
+    },
+    {
+      "source_path": "specs/06-usb-rom-feasibility.md",
+      "source_blob_at_init": "5f03c2b865cc47d22936b18b6a855ffb50b526b6",
+      "working_tree_change": false,
+      "export_path": "specs/06-usb-rom-feasibility.md",
+      "export_bytes": 14006,
+      "export_sha256": "9ec022b40828c17a26e7a689742c5eb214f655c7bce6f91d82e0fb9f2b51f051",
+      "sanitized": false
+    },
+    {
+      "source_path": "specs/07-platform-packaging.md",
+      "source_blob_at_init": "9d2858646b402d73d6c8b0c07a5104ca15526bea",
+      "working_tree_change": false,
+      "export_path": "specs/07-platform-packaging.md",
+      "export_bytes": 11975,
+      "export_sha256": "2b2341de1f30a3ecd660a7ab357f18f80cda26743885576873ec75f4224fd70c",
+      "sanitized": true
+    },
+    {
+      "source_path": "specs/08-agent-firmware-validation.md",
+      "source_blob_at_init": "216f9135d3afa40d25830e758120a7a3dda83d52",
+      "working_tree_change": false,
+      "export_path": "specs/08-agent-firmware-validation.md",
+      "export_bytes": 11812,
+      "export_sha256": "f80eb52c3acca0a5f0e65ac00a361c76b3a7a2f920e15c45fc2e14ada7b36bce",
+      "sanitized": false
+    },
+    {
+      "source_path": "specs/09-unbricker-reuse-review.md",
+      "source_blob_at_init": "3da387f12923538cc86152e3c4200a191089914f",
+      "working_tree_change": false,
+      "export_path": "specs/09-unbricker-reuse-review.md",
+      "export_bytes": 19572,
+      "export_sha256": "6c82951c9eedeaa5b6bf53822182b0967e026923312af15f56f1a5d481db0900",
+      "sanitized": true
+    },
+    {
+      "source_path": "specs/10-offline-agent-contract.md",
+      "source_blob_at_init": "43a422333023fe71bde326cbfec4b232fc63ac2b",
+      "working_tree_change": false,
+      "export_path": "specs/10-offline-agent-contract.md",
+      "export_bytes": 6568,
+      "export_sha256": "33a6e7d83bbab81fcf98c7ed5ab6ac80fbfe20cf4619786e4a67a586ab96420f",
+      "sanitized": true
+    },
+    {
+      "source_path": "specs/11-cli-distribution-options.md",
+      "source_blob_at_init": "c8eaca051abcc989119389658825a5091ede7895",
+      "working_tree_change": false,
+      "export_path": "specs/11-cli-distribution-options.md",
+      "export_bytes": 5622,
+      "export_sha256": "a746d360add844129f7cfad24a63d38d37fc4e4401389914798dcb13d445cf16",
+      "sanitized": false
+    },
+    {
+      "source_path": "specs/12-native-foundation.md",
+      "source_blob_at_init": "44779283cdd49ab895c10924da008edea82f3ec8",
+      "working_tree_change": false,
+      "export_path": "specs/12-native-foundation.md",
+      "export_bytes": 5186,
+      "export_sha256": "4b60a599f73691de1c56af49004acc4724ccf90774e6e19bdc48e38a015cb953",
+      "sanitized": true
+    },
+    {
+      "source_path": "specs/13-native-parser-codecs.md",
+      "source_blob_at_init": "1ec0a695d19c149c0c528af0ed4dc25b48faaaa9",
+      "working_tree_change": false,
+      "export_path": "specs/13-native-parser-codecs.md",
+      "export_bytes": 8809,
+      "export_sha256": "2b198f19698252b762171c0cf6c37f4cb95a624da6d93fe32ea3ba833a7abd7c",
+      "sanitized": true
+    },
+    {
+      "source_path": "specs/14-native-profiles-planning.md",
+      "source_blob_at_init": "1bef99b2140be60d291ea3aad189c1930be0f72d",
+      "working_tree_change": false,
+      "export_path": "specs/14-native-profiles-planning.md",
+      "export_bytes": 8764,
+      "export_sha256": "9f06c539b8c863e6844bec27d47b5b531db6214fb1d214e88c5d77622841a31a",
+      "sanitized": true
+    },
+    {
+      "source_path": "specs/15-native-backups-model-writer.md",
+      "source_blob_at_init": "8611ad4e834602b8dc556c962a20ad5129f8c4e5",
+      "working_tree_change": false,
+      "export_path": "specs/15-native-backups-model-writer.md",
+      "export_bytes": 14031,
+      "export_sha256": "d193a9155de420e2cf26dee98dac2b71ee7ba537780e078ba0bc2062a1e9878c",
+      "sanitized": true
+    },
+    {
+      "source_path": "specs/16-stock-usbc-backup.md",
+      "source_blob_at_init": "f05c23adcc25bfd00477f5224f0b7defabb2fe5d",
+      "working_tree_change": false,
+      "export_path": "specs/16-stock-usbc-backup.md",
+      "export_bytes": 20373,
+      "export_sha256": "9b2aafdbeda4dcfa83ba1867764216237fed2b9ddb3758d2dc34c090f71960f5",
+      "sanitized": true
+    },
+    {
+      "source_path": "specs/17-native-usbc-backup.md",
+      "source_blob_at_init": "eb2a3cd5bf839ea3e8d63f2b09398ac50197b1a8",
+      "working_tree_change": false,
+      "export_path": "specs/17-native-usbc-backup.md",
+      "export_bytes": 9306,
+      "export_sha256": "9c558b1ec3b90775fb6317cbc789aca875c1eb68d36e5c91f28a1d80e327f7eb",
+      "sanitized": true
+    },
+    {
+      "source_path": "specs/18-native-usb-backup-storage.md",
+      "source_blob_at_init": "9e91617c5a2d93fa52d73fc42f397043169f944b",
+      "working_tree_change": false,
+      "export_path": "specs/18-native-usb-backup-storage.md",
+      "export_bytes": 10711,
+      "export_sha256": "4ccbd592094fda396df09c22b0a72dab1a068a4a82b408d138a2c738315cee42",
+      "sanitized": true
+    },
+    {
+      "source_path": "specs/19-native-read-adapters.md",
+      "source_blob_at_init": "288380d86ef581b67c3ea06172e66ca2bebe39ac",
+      "working_tree_change": false,
+      "export_path": "specs/19-native-read-adapters.md",
+      "export_bytes": 14971,
+      "export_sha256": "8c63f6d42c09c982c02834b61b9235e826a50555567a631ff89322682f9114cc",
+      "sanitized": true
+    },
+    {
+      "source_path": "specs/20-stock-entry-loader-audit.md",
+      "source_blob_at_init": "a14ce16323ff1502b02adbeccd95eeaf1f8ef258",
+      "working_tree_change": false,
+      "export_path": "specs/20-stock-entry-loader-audit.md",
+      "export_bytes": 18924,
+      "export_sha256": "10f8d13ad0066c439ca683a3b859a9b9a670a43c8a9cbb9536ecb221b325951d",
+      "sanitized": true
+    },
+    {
+      "source_path": "specs/21-injected-native-read-driver.md",
+      "source_blob_at_init": "3d2cbfed9e06bac9c95815232832509d38d1170e",
+      "working_tree_change": false,
+      "export_path": "specs/21-injected-native-read-driver.md",
+      "export_bytes": 15980,
+      "export_sha256": "65e38aa3e23e5926d686b3c3bc61d40f9f76ca02a310af4e3edeb9874385a2ad",
+      "sanitized": true
+    },
+    {
+      "source_path": "specs/22-actual-usb-bindings.md",
+      "source_blob_at_init": "2ff8b232cb64ab39a3fb999bd3f3619d6331a180",
+      "working_tree_change": false,
+      "export_path": "specs/22-actual-usb-bindings.md",
+      "export_bytes": 14532,
+      "export_sha256": "35d7a82c55d096ef02f79176c38e13b39f4c615daf71b492bc67915db7fa1e52",
+      "sanitized": true
+    },
+    {
+      "source_path": "specs/23-loader-static-followup.md",
+      "source_blob_at_init": "a729addc889a095c4b70929e5a3996b6f7918937",
+      "working_tree_change": false,
+      "export_path": "specs/23-loader-static-followup.md",
+      "export_bytes": 12926,
+      "export_sha256": "1fa1100f901f58c0fce1843047c6588f6f80b5ace3534c2e1fd7a03b8058b96d",
+      "sanitized": true
+    },
+    {
+      "source_path": "specs/24-rescue-script-review.md",
+      "source_blob_at_init": null,
+      "working_tree_change": true,
+      "export_path": "specs/24-rescue-script-review.md",
+      "export_bytes": 8941,
+      "export_sha256": "8ef11ee6c9fabad05fbfbe0496d578760784157bc597254cd2b46dfe975b1479",
+      "sanitized": false
+    },
+    {
+      "source_path": "specs/25-stock-version-identification.md",
+      "source_blob_at_init": "9793eef3d9562f04ec04c1bec9ce4113cd477283",
+      "working_tree_change": false,
+      "export_path": "specs/25-stock-version-identification.md",
+      "export_bytes": 8658,
+      "export_sha256": "75e50a33ad06b86f1589924b4635748a7acc9a36fd97a66bff94e8ed8eb32654",
+      "sanitized": false
+    },
+    {
+      "source_path": "specs/26-native-midi-identity.md",
+      "source_blob_at_init": "cb7c55d27f7ccfa62764c4ad229cbd68931b7028",
+      "working_tree_change": false,
+      "export_path": "specs/26-native-midi-identity.md",
+      "export_bytes": 12620,
+      "export_sha256": "46a7ef6bce67cf4d3eaf8cbe15c7f4fa41eaeb136b278989de143dbe62665fbe",
+      "sanitized": true
+    },
+    {
+      "source_path": "specs/27-loader-source-effects-followup.md",
+      "source_blob_at_init": "c7a914ca97beb0c651801260105e55e3c5b015af",
+      "working_tree_change": false,
+      "export_path": "specs/27-loader-source-effects-followup.md",
+      "export_bytes": 15613,
+      "export_sha256": "7528585a33f0da855a7512bbd28dd5455f859083ba9532acc8919fd048e00a00",
+      "sanitized": true
+    },
+    {
+      "source_path": "specs/28-first-backup-readiness.md",
+      "source_blob_at_init": "07a5d1ccccffe41b0318ec5ff72347b603299085",
+      "working_tree_change": false,
+      "export_path": "specs/28-first-backup-readiness.md",
+      "export_bytes": 7187,
+      "export_sha256": "2b2b0a39ec3186358b5d55cd48f74eb12e196324f8594d5a4de40b45407328c8",
+      "sanitized": true
+    },
+    {
+      "source_path": "specs/29-loader-startup-callpaths.md",
+      "source_blob_at_init": "323d72b3202003e75e2515be204ca09fe1851d3d",
+      "working_tree_change": false,
+      "export_path": "specs/29-loader-startup-callpaths.md",
+      "export_bytes": 15597,
+      "export_sha256": "959b109cb7122b76d9121d709937c95d94d4394a4ef9b9c29b9b0a3f65a60377",
+      "sanitized": true
+    },
+    {
+      "source_path": "specs/30-loader-read-return-callpaths.md",
+      "source_blob_at_init": "8fb861e1d7faba869613887de45dbe8e28fe33c5",
+      "working_tree_change": false,
+      "export_path": "specs/30-loader-read-return-callpaths.md",
+      "export_bytes": 14501,
+      "export_sha256": "1a6fe0c6b0a73b5928bab8859055aa4dd676512c41f4c8fd87565b78b5c2d6a9",
+      "sanitized": true
+    },
+    {
+      "source_path": "specs/31-loader-callpath-audit.md",
+      "source_blob_at_init": "93a33d13e6689e22d99487ab3a88aec8db934724",
+      "working_tree_change": false,
+      "export_path": "specs/31-loader-callpath-audit.md",
+      "export_bytes": 11812,
+      "export_sha256": "48a0f665fb3f96d84e5764a4ab4d8b772b44f4d5dd5c727e05fb113421d7240d",
+      "sanitized": true
+    },
+    {
+      "source_path": "specs/32-loader-no-status-start-profile.md",
+      "source_blob_at_init": "367a100cb9989dc1db9900c756421f30adb2d374",
+      "working_tree_change": false,
+      "export_path": "specs/32-loader-no-status-start-profile.md",
+      "export_bytes": 16152,
+      "export_sha256": "77ecebbe604e391d1b3ab02bd33917403be787a3be916db514066baa079e0169",
+      "sanitized": true
+    },
+    {
+      "source_path": "specs/33-loader-no-fc0a-read-session.md",
+      "source_blob_at_init": "79327200461619e95adb22f60fe3e25aa97c9953",
+      "working_tree_change": false,
+      "export_path": "specs/33-loader-no-fc0a-read-session.md",
+      "export_bytes": 21533,
+      "export_sha256": "4e47c2c5da55ae78be7459a65ed86ef75dd2b24e1320ff4e7081871056cfb4f1",
+      "sanitized": true
+    },
+    {
+      "source_path": "specs/34-no-status-backup-profile-decision.md",
+      "source_blob_at_init": "87af083b321d35b488511e8b8c640cd6b6f94ed0",
+      "working_tree_change": false,
+      "export_path": "specs/34-no-status-backup-profile-decision.md",
+      "export_bytes": 11213,
+      "export_sha256": "e26536500307dbce7ce3e5aa06221fd0461d6e349f11dff830e24baabed7511b",
+      "sanitized": true
+    },
+    {
+      "source_path": "specs/35-native-start-context-assessor.md",
+      "source_blob_at_init": "85f43c40ca86d1f5eba04299fb8668de85a8d6cf",
+      "working_tree_change": false,
+      "export_path": "specs/35-native-start-context-assessor.md",
+      "export_bytes": 10256,
+      "export_sha256": "9a3d32c3b2ac6c281a2f0fab728e8199211271a80a9ed5ecab8600138f8a7b86",
+      "sanitized": true
+    },
+    {
+      "source_path": "specs/36-native-fixed-metadata-validation.md",
+      "source_blob_at_init": "4e96e04325fbf26769d201cb6ef0dbd7ac578191",
+      "working_tree_change": false,
+      "export_path": "specs/36-native-fixed-metadata-validation.md",
+      "export_bytes": 12638,
+      "export_sha256": "b1127aa8361333e284babbd773f800e5753dd4d9116493c1bcde82c5b321fa13",
+      "sanitized": true
+    },
+    {
+      "source_path": "specs/37-native-finite-backup-session.md",
+      "source_blob_at_init": "6044d2efac6459fe5e7d75cd3d2f8ebda9572849",
+      "working_tree_change": false,
+      "export_path": "specs/37-native-finite-backup-session.md",
+      "export_bytes": 12701,
+      "export_sha256": "6dfdf6daf99620f120f7788050e76cb9161478fdc89cf97369ce11c021ca2f2b",
+      "sanitized": true
+    },
+    {
+      "source_path": "specs/38-native-backup-wire-engine.md",
+      "source_blob_at_init": "9f8531c5f04ef92b4ee61331e0362c6cf5ae9b55",
+      "working_tree_change": false,
+      "export_path": "specs/38-native-backup-wire-engine.md",
+      "export_bytes": 14215,
+      "export_sha256": "2a8af8ce9da2af07aa7fd24e7121e7fbd0af7e444f10da9d0444781f28d4a7c4",
+      "sanitized": true
+    },
+    {
+      "source_path": "specs/39-native-secure-file-integration.md",
+      "source_blob_at_init": "11b08512e88584c7fee8d4a4724eaedb892e42b5",
+      "working_tree_change": false,
+      "export_path": "specs/39-native-secure-file-integration.md",
+      "export_bytes": 14737,
+      "export_sha256": "d27592de94f90a6109b4c736c0c0042ff1f5262fec49b2bdd69dc05ab1ed9b17",
+      "sanitized": true
+    },
+    {
+      "source_path": "specs/40-v15-entry-rom-backup-audit.md",
+      "source_blob_at_init": "92c383562db8e8718b061fc1ba3e4d69aced6da2",
+      "working_tree_change": false,
+      "export_path": "specs/40-v15-entry-rom-backup-audit.md",
+      "export_bytes": 17744,
+      "export_sha256": "81a1cf2c2826208cf8044a02975cec853b348ada91f41599fb30f8f842a188dd",
+      "sanitized": true
+    },
+    {
+      "source_path": "specs/41-rom-fd07-macos-entry-return.md",
+      "source_blob_at_init": "a7386c41ca94dc3ce9b7bfae03c79f6ffea812ca",
+      "working_tree_change": false,
+      "export_path": "specs/41-rom-fd07-macos-entry-return.md",
+      "export_bytes": 18792,
+      "export_sha256": "491ef507936e80c90ab17c84bc751c86b8d316991d870058829411324dec47b9",
+      "sanitized": true
+    },
+    {
+      "source_path": "specs/42-targeted-wl82-rom-external-evidence.md",
+      "source_blob_at_init": "9eaf198e1c32b4e1a1f43a754505d62f5129db6f",
+      "working_tree_change": false,
+      "export_path": "specs/42-targeted-wl82-rom-external-evidence.md",
+      "export_bytes": 20006,
+      "export_sha256": "f5d53f50e619a4dedc126fbe422ff290fc564bf10ecdaa9b199b115acf664f99",
+      "sanitized": true
+    },
+    {
+      "source_path": "specs/43-full-raw-dumper-product.md",
+      "source_blob_at_init": "780498cd28d3e74bd9a39b1257c993fa96e243ce",
+      "working_tree_change": false,
+      "export_path": "specs/43-full-raw-dumper-product.md",
+      "export_bytes": 11568,
+      "export_sha256": "af887f516f3a2ae5e18576885eb6df4f667cbd98c7d28e9150e1ff68fe4f797b",
+      "sanitized": true
+    },
+    {
+      "source_path": "specs/44-offline-raw-dump-cli.md",
+      "source_blob_at_init": "74ee659bcf873e41aee85d3d6f95d71d97435c8d",
+      "working_tree_change": false,
+      "export_path": "specs/44-offline-raw-dump-cli.md",
+      "export_bytes": 10297,
+      "export_sha256": "cd2f858791e1a492adac15f92eb419ce8b66fa7c803300bfc1019d58679a9be1",
+      "sanitized": true
+    },
+    {
+      "source_path": "specs/45-official-30k-loader-no-status-read.md",
+      "source_blob_at_init": "40fdd689c9aa2dbb4b45c12c87aec3cf7ccc4968",
+      "working_tree_change": false,
+      "export_path": "specs/45-official-30k-loader-no-status-read.md",
+      "export_bytes": 19154,
+      "export_sha256": "995116bba5c9f0f8085c50a383ca6857046bea8612f5fcc3cae3c60e50c8d1b1",
+      "sanitized": true
+    },
+    {
+      "source_path": "specs/46-macos-entry-packetizer-v15-receiver.md",
+      "source_blob_at_init": "ea791eb3ee51d299913d5c49c3a38783e3981e0c",
+      "working_tree_change": false,
+      "export_path": "specs/46-macos-entry-packetizer-v15-receiver.md",
+      "export_bytes": 14767,
+      "export_sha256": "c5d0fde739c63eead6c134b156b2747878c511fad8fc7a87338b96e5f6057cf0",
+      "sanitized": true
+    },
+    {
+      "source_path": "specs/47-rom-fd07-effects-ram-ownership.md",
+      "source_blob_at_init": "16c3e8b4f794a142d109c8e2992fa49658ba250f",
+      "working_tree_change": false,
+      "export_path": "specs/47-rom-fd07-effects-ram-ownership.md",
+      "export_bytes": 13246,
+      "export_sha256": "d2d3e41f34e4be6ec9562691599b2300f82aa007c3246f151040beebca59b6b6",
+      "sanitized": true
+    },
+    {
+      "source_path": "specs/48-online-rom-evidence-route-reassessment.md",
+      "source_blob_at_init": "d6a432f45c266fc4e73c6ade9d19057c9b4d2733",
+      "working_tree_change": false,
+      "export_path": "specs/48-online-rom-evidence-route-reassessment.md",
+      "export_bytes": 15915,
+      "export_sha256": "a94ee8b638ba9ebddf14442bb0c1a4ea91a6fe79443d443a97b2a190daba601a",
+      "sanitized": true
+    },
+    {
+      "source_path": "specs/49-lunar-deterministic-backup-route-audit.md",
+      "source_blob_at_init": "451ab2a5c4066cca78b8d7c48a1cfd4c2b5f7fa7",
+      "working_tree_change": false,
+      "export_path": "specs/49-lunar-deterministic-backup-route-audit.md",
+      "export_bytes": 13537,
+      "export_sha256": "89fd696944f8d850feb7841ac77372fde83e4b4c01d48e2ba0b967914aa9f0c5",
+      "sanitized": true
+    },
+    {
+      "source_path": "specs/50-rom-initializer-memory-callback-contracts.md",
+      "source_blob_at_init": "24434e830c47903ec0bd772dc207acbe86a3955d",
+      "working_tree_change": false,
+      "export_path": "specs/50-rom-initializer-memory-callback-contracts.md",
+      "export_bytes": 14883,
+      "export_sha256": "f78bebcee6fdab3e2377e637a36be744a8f5aef90da131f54fbe7092e12a6a90",
+      "sanitized": true
+    },
+    {
+      "source_path": "specs/51-online-initializer-no-fc0a-evidence.md",
+      "source_blob_at_init": "6999caffeee90917b2dd76a6c6e0713001ccc038",
+      "working_tree_change": false,
+      "export_path": "specs/51-online-initializer-no-fc0a-evidence.md",
+      "export_bytes": 12129,
+      "export_sha256": "1740820064022919c36890a5f7b5f9e5aa3bbdf7bae39a6ea3ace1570fd90169",
+      "sanitized": true
+    },
+    {
+      "source_path": "specs/52-mflasher-source-reader-route.md",
+      "source_blob_at_init": "9fee088c43a594acd611fe7089f09cf97a14e0b1",
+      "working_tree_change": false,
+      "export_path": "specs/52-mflasher-source-reader-route.md",
+      "export_bytes": 13790,
+      "export_sha256": "6e9b44eaf617b1294a78e32db5ea4fc0cde95ad5a0a03c339e9827fb4d29acbd",
+      "sanitized": true
+    },
+    {
+      "source_path": "specs/README.md",
+      "source_blob_at_init": "892e97ca15c1a1a9477a28d6799e39e76c992ae8",
+      "working_tree_change": true,
+      "export_path": "specs/README.md",
+      "export_bytes": 23028,
+      "export_sha256": "aa14b16c49816c4e79d9099811231b9691dec6c5377715e0958ab526954da52b",
+      "sanitized": false
+    }
+  ]
+}

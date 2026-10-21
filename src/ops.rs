@@ -314,66 +314,8 @@ impl<F: Flash> Session<F> {
     }
 
     pub fn plan_firmware(&self, raw: &[u8], with_bootloader: bool, wipe_settings: bool) -> Result<Plan, Error> {
-        let pkg = Package::parse(raw).map_err(|e| Error::Refused(e.0))?;
-        let board = self.need_board()?;
-        if !board.models.contains(&pkg.model()) {
-            return refuse(format!("this package is for the {}, the connected unit is a {}", pkg.model(), board.name));
-        }
-        if pkg.flash.len() > FLASH_SIZE {
-            return refuse("the package is larger than the flash");
-        }
-        let key = self.dev.chip_key();
-        let mut padded = pkg.flash.clone();
-        padded.resize(FLASH_SIZE, 0xFF);
-        if app_files_status(&padded, key) != AppStatus::Ok {
-            return refuse(format!("the package's firmware does not decrypt with this unit's chip key (0x{key:04X}): \
-                                   writing it would not start"));
-        }
-        let (mut notes, mut warnings) = (vec![], vec![]);
-        if let Some(m) = &self.analysis.model_name {
-            if m.starts_with("SMK-37 ") && m != pkg.model() {
-                warnings.push(format!("The unit runs {m} firmware; this package is for the {}. The unit will then \
-                                       report itself as that model.", pkg.model()));
-            }
-        }
-        let regions = |img: &[u8]| -> Vec<(String, u32, u32)> {
-            let mut v: Vec<_> = app_table(img, key).into_iter().filter(|e| e.attr == 0x12 || e.attr == 0x92)
-                .map(|e| (e.name, e.addr, e.len)).collect();
-            v.sort();
-            v
-        };
-        let old = regions(&self.flash);
-        if !old.is_empty() && old != regions(&padded) {
-            warnings.push(format!("The installed firmware ({}) keeps its data in other places than {}; what it leaves \
-                                   behind can confuse the new firmware (wrong presets, no sound). To go back to a \
-                                   firmware cleanly, restore a backup made while it was installed.",
-                                  self.analysis.firmware_text, pkg.identity));
-        }
-        let start = if with_bootloader { 0 } else { BOOT_AREA };
-        let end = pkg.flash.len();
-        let mut target = self.flash.clone();
-        target[start..end].copy_from_slice(&pkg.flash[start..end]);
-        let mut allowed = vec![(start, end)];
-        notes.push(format!("Installs {} ({}).", pkg.identity, ranges_text(&allowed)));
-        if with_bootloader {
-            notes.push("Also puts back the package's (stock) bootloader.".into());
-        }
-        if wipe_settings {
-            for e in app_table(&padded, key) {
-                let (a, n) = (e.addr as usize, e.len as usize);
-                if (e.name == "VM" || e.name == "BTIF") && (e.attr == 0x12 || e.attr == 0x92) && n > 0
-                    && a % SECTOR == 0 && a + n <= FLASH_SIZE {
-                    if board.factory.iter().any(|&(fa, fb)| fa < a + n && a < fb) {
-                        return refuse(format!("the package declares {} over factory data", e.name));
-                    }
-                    target[a..a + n].fill(0xFF);
-                    allowed.push((a, a + n));
-                    notes.push(format!("Erases {} (0x{a:05X}-0x{:05X}): {}", e.name, a + n - 1,
-                                       if e.name == "VM" { "settings" } else { "Bluetooth pairings" }));
-                }
-            }
-        }
-        Plan::new(format!("Install firmware {}", pkg.identity), &self.flash, target, allowed, notes, warnings)
+        plan_firmware_saved(&self.flash, &self.analysis, self.need_board()?, self.dev.chip_key(),
+                            raw, with_bootloader, wipe_settings)
     }
 
     /// Our bundled bootloader (`boot` None), a given uboot.boot, or the stock one
@@ -511,4 +453,72 @@ fn give_to_sudo_user(_path: &Path) {
 /// The model by its key (for the command line's --board).
 pub fn board_from_key(key: &str) -> Option<&'static Board> {
     BOARDS.iter().copied().find(|b| b.key == key)
+}
+
+/// Pure counterpart of Session::plan_firmware. It never opens a session or
+/// queries a transport; saved-file dry plans and live plans share this core.
+pub fn plan_firmware_saved(current: &[u8], analysis: &Analysis, board: &Board, key: u16,
+                           raw: &[u8], with_bootloader: bool, wipe_settings: bool) -> Result<Plan, Error> {
+    if current.len() != FLASH_SIZE { return refuse("saved current image must have historical full size"); }
+    let pkg = Package::parse(raw).map_err(|e| Error::Refused(e.0))?;
+    if !board.models.contains(&pkg.model()) {
+        return refuse(format!("this package is for the {}, the connected unit is a {}", pkg.model(), board.name));
+    }
+    if pkg.flash.len() > FLASH_SIZE {
+        return refuse("the package is larger than the flash");
+    }
+    if !crate::formats::app_files_present(&pkg.flash, key) {
+        return refuse("the package does not contain all declared app file bytes");
+    }
+    let mut padded = pkg.flash.clone();
+    padded.resize(FLASH_SIZE, 0xFF);
+    if app_files_status(&padded, key) != AppStatus::Ok {
+        return refuse(format!("the package's firmware does not decrypt with this unit's chip key (0x{key:04X}): \
+                               writing it would not start"));
+    }
+    let (mut notes, mut warnings) = (vec![], vec![]);
+    if let Some(m) = &analysis.model_name {
+        if m.starts_with("SMK-37 ") && m != pkg.model() {
+            warnings.push(format!("The unit runs {m} firmware; this package is for the {}. The unit will then \
+                                   report itself as that model.", pkg.model()));
+        }
+    }
+    let regions = |img: &[u8]| -> Vec<(String, u32, u32)> {
+        let mut v: Vec<_> = app_table(img, key).into_iter().filter(|e| e.attr == 0x12 || e.attr == 0x92)
+            .map(|e| (e.name, e.addr, e.len)).collect();
+        v.sort();
+        v
+    };
+    let old = regions(current);
+    if !old.is_empty() && old != regions(&padded) {
+        warnings.push(format!("The installed firmware ({}) keeps its data in other places than {}; what it leaves \
+                               behind can confuse the new firmware (wrong presets, no sound). To go back to a \
+                               firmware cleanly, restore a backup made while it was installed.",
+                              analysis.firmware_text, pkg.identity));
+    }
+    let start = if with_bootloader { 0 } else { BOOT_AREA };
+    let end = pkg.flash.len();
+    let mut target = current.to_vec();
+    target[start..end].copy_from_slice(&pkg.flash[start..end]);
+    let mut allowed = vec![(start, end)];
+    notes.push(format!("Installs {} ({}).", pkg.identity, ranges_text(&allowed)));
+    if with_bootloader {
+        notes.push("Also puts back the package's (stock) bootloader.".into());
+    }
+    if wipe_settings {
+        for e in app_table(&padded, key) {
+            let (a, n) = (e.addr as usize, e.len as usize);
+            if (e.name == "VM" || e.name == "BTIF") && (e.attr == 0x12 || e.attr == 0x92) && n > 0
+                && a % SECTOR == 0 && a + n <= FLASH_SIZE {
+                if board.factory.iter().any(|&(fa, fb)| fa < a + n && a < fb) {
+                    return refuse(format!("the package declares {} over factory data", e.name));
+                }
+                target[a..a + n].fill(0xFF);
+                allowed.push((a, a + n));
+                notes.push(format!("Erases {} (0x{a:05X}-0x{:05X}): {}", e.name, a + n - 1,
+                                   if e.name == "VM" { "settings" } else { "Bluetooth pairings" }));
+            }
+        }
+    }
+    Plan::new(format!("Install firmware {}", pkg.identity), current, target, allowed, notes, warnings)
 }

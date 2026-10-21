@@ -1,0 +1,383 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-16",
+  "baseline_commit": "9d962747437d92cbab594c2320b586d162c6572d",
+  "branch": "init",
+  "scope": "Offline artifact only; no usable hardware backup command or enabled strict profile.",
+  "build": {
+    "schema": 1,
+    "kind": "offline-candidate-not-hardware-qualified",
+    "build_id": "3830fc94",
+    "input_fingerprint": "3830fc9499f6a2a16cfcb2f2a6a57b2b623c1828f070adccb81ce15d11189a44",
+    "source_sha256": {
+      "include/fmr.h": "11dd923307f763d3cc8f90fb87f5ef64d1aae4b67132ada604c2328131411944",
+      "src/reader.c": "ddf4b17131446d4fd569e4efc9d24d9f04d1d669037b832ee20596f8baf08d19",
+      "src/wl82.c": "4226d2af344642e9c1b7ce65c34adc70c036315c61df46732656a8371b64868b",
+      "reader.ld": "67c7fe1202d38a6885a868a98d7a4e0ea442e50ef6fa3067aedd0a43b6948502",
+      "build.py": "b9fdc881b63baf71507bb7340b0eadb79c84dff6a83b400ffd2ff46ea64ecd7c",
+      "toolchain-lock.json": "ea28169afa01be40916150435ddaba91f95fe4bee4c32e696923c90a582cc697",
+      "verify_artifact.py": "cada60ae80e97f46338c4bb98b1926019795bca5c3f49e6c640c183effae0a2e"
+    },
+    "toolchain": {
+      "schema": 1,
+      "toolchain_revision": "jieli-linux-toolchains-20260730.1",
+      "container_image": "sha256:b59036579f0622d1b3aa5286aaf2fcef9b9c6f88f31c6762236fc2f136f7f650",
+      "tools": {
+        "common/bin/clang": {
+          "bytes": 46784720,
+          "sha256": "c45189ee624de0430deb0db02e6dce171fb5538e7fe323e3964dc8ac6236240f"
+        },
+        "pi32v2/bin/ld": {
+          "bytes": 5728352,
+          "sha256": "fd61aff15616bb6f6b58fd2e9ede7af741c7bf05facb3e0cb3d3c9817c268fd9"
+        },
+        "pi32v2/bin/LLVMgold.so": {
+          "bytes": 17659208,
+          "sha256": "2ca8dafde18070d6a42fc47fc2ec4723946cf3d2404ca25981de5070beb1aa12"
+        },
+        "common/bin/objcopy": {
+          "bytes": 2141808,
+          "sha256": "295151226e28891115c97262e6460a06fe67fc0753858e0df3234eb000ea6e66"
+        },
+        "common/bin/objdump": {
+          "bytes": 3523120,
+          "sha256": "f7e449e2c8001d5ed4493a45d1f5f304c8910418e4074acdc8715079ef64e08a"
+        }
+      }
+    },
+    "compiler_flags": [
+      "-target",
+      "pi32v2",
+      "-mcpu=r3",
+      "-Os",
+      "-ffreestanding",
+      "-fno-builtin",
+      "-fno-common",
+      "-fno-ident",
+      "-fno-stack-protector",
+      "-fno-unwind-tables",
+      "-fno-asynchronous-unwind-tables",
+      "-ffunction-sections",
+      "-fdata-sections",
+      "-Wall",
+      "-Wextra",
+      "-Werror"
+    ],
+    "commands": [
+      [
+        "/toolchain/common/bin/clang",
+        "-target",
+        "pi32v2",
+        "-mcpu=r3",
+        "-Os",
+        "-ffreestanding",
+        "-fno-builtin",
+        "-fno-common",
+        "-fno-ident",
+        "-fno-stack-protector",
+        "-fno-unwind-tables",
+        "-fno-asynchronous-unwind-tables",
+        "-ffunction-sections",
+        "-fdata-sections",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/input/include",
+        "-DFMR_BUILD_ID=0x3830fc94u",
+        "-c",
+        "/input/src/reader.c",
+        "-o",
+        "/output/reader.o"
+      ],
+      [
+        "/toolchain/common/bin/clang",
+        "-target",
+        "pi32v2",
+        "-mcpu=r3",
+        "-Os",
+        "-ffreestanding",
+        "-fno-builtin",
+        "-fno-common",
+        "-fno-ident",
+        "-fno-stack-protector",
+        "-fno-unwind-tables",
+        "-fno-asynchronous-unwind-tables",
+        "-ffunction-sections",
+        "-fdata-sections",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/input/include",
+        "-DFMR_BUILD_ID=0x3830fc94u",
+        "-c",
+        "/input/src/wl82.c",
+        "-o",
+        "/output/wl82.o"
+      ],
+      [
+        "/toolchain/pi32v2/bin/ld",
+        "--plugin",
+        "/toolchain/pi32v2/bin/LLVMgold.so",
+        "-o",
+        "/output/fmr-reader.elf",
+        "/output/reader.o",
+        "/output/wl82.o",
+        "-T",
+        "/input/reader.ld",
+        "--gc-sections",
+        "-Map=/output/fmr-reader.map"
+      ],
+      [
+        "/toolchain/common/bin/objcopy",
+        "-O",
+        "binary",
+        "-j",
+        ".text",
+        "/output/fmr-reader.elf",
+        "/output/fmr-text.bin"
+      ],
+      [
+        "/toolchain/common/bin/objcopy",
+        "-O",
+        "binary",
+        "-j",
+        ".data",
+        "/output/fmr-reader.elf",
+        "/output/fmr-data.bin"
+      ]
+    ],
+    "outputs": {
+      "artifact-audit.json": {
+        "bytes": 3844,
+        "sha256": "53202d470a08884a7f4c1776434933872b7457ab838a79d35af05b00ee25486f"
+      },
+      "build.stderr": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "build.stdout": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "fmr-data.bin": {
+        "bytes": 4,
+        "sha256": "c6e53139e2d20a89c3ac27b92c4d14aaf368d3e67e8e4da58f525af43ad98f46"
+      },
+      "fmr-reader.bin": {
+        "bytes": 1456,
+        "sha256": "63c12a9ded28b53fa991c8261cbc8065ef93f8e71a805f53553999175422618a"
+      },
+      "fmr-reader.dis": {
+        "bytes": 28346,
+        "sha256": "37f7b27da063d7504daa4d7dff3c36533358dec911e19f0e2e83c183f0c75858"
+      },
+      "fmr-reader.elf": {
+        "bytes": 3744,
+        "sha256": "f5078a8a399897565a35d4f4324e4d1676d880192b775e31770cef5d9d653c67"
+      },
+      "fmr-reader.map": {
+        "bytes": 3694,
+        "sha256": "d645d6cdc3cd66da5cfca84797fe5ca4b2be58473cf89361235b1bde81cc1cc7"
+      },
+      "fmr-reader.symbols": {
+        "bytes": 1230,
+        "sha256": "aeceeb1a0b5e27c008993e8bf2ebb8aadada0f50796a2cb9eea65dbaaaab23f1"
+      },
+      "fmr-text.bin": {
+        "bytes": 1452,
+        "sha256": "a8e7fdaf390425a44cce8ca11d354c6f4e3329cbbec333b5040e2e8fb486431e"
+      },
+      "reader.o": {
+        "bytes": 2420,
+        "sha256": "c4cfb243b4658a4012e09242ba9c054d9450ec92226596b0f8b65f18daeda90a"
+      },
+      "wl82.o": {
+        "bytes": 1652,
+        "sha256": "db9617a12a763b425e802a765e4db9826281760529f61051746449ba6640fddd"
+      }
+    },
+    "hardware_access": false,
+    "target_executed_or_emulated": false,
+    "network_access_in_build": false,
+    "flash_write": false,
+    "runtime_profile_enabled": false
+  },
+  "independent_static_review": {
+    "schema": 1,
+    "result": "PASS: exact offline M1 source/artifact; physical qualification absent",
+    "artifact_directory": "target/fmr-reader/build-6",
+    "build_id": "3830fc94",
+    "source_build_fingerprint": "3830fc9499f6a2a16cfcb2f2a6a57b2b623c1828f070adccb81ce15d11189a44",
+    "elf_sha256": "f5078a8a399897565a35d4f4324e4d1676d880192b775e31770cef5d9d653c67",
+    "binary_sha256": "63c12a9ded28b53fa991c8261cbc8065ef93f8e71a805f53553999175422618a",
+    "listing_sha256": "37f7b27da063d7504daa4d7dff3c36533358dec911e19f0e2e83c183f0c75858",
+    "source_sha256": {
+      "include/fmr.h": "11dd923307f763d3cc8f90fb87f5ef64d1aae4b67132ada604c2328131411944",
+      "src/reader.c": "ddf4b17131446d4fd569e4efc9d24d9f04d1d669037b832ee20596f8baf08d19",
+      "src/wl82.c": "4226d2af344642e9c1b7ce65c34adc70c036315c61df46732656a8371b64868b",
+      "reader.ld": "67c7fe1202d38a6885a868a98d7a4e0ea442e50ef6fa3067aedd0a43b6948502",
+      "build.py": "b9fdc881b63baf71507bb7340b0eadb79c84dff6a83b400ffd2ff46ea64ecd7c",
+      "toolchain-lock.json": "ea28169afa01be40916150435ddaba91f95fe4bee4c32e696923c90a582cc697",
+      "verify_artifact.py": "cada60ae80e97f46338c4bb98b1926019795bca5c3f49e6c640c183effae0a2e"
+    },
+    "geometry": {
+      "entry": "0x01c20000",
+      "uploaded_bytes": 1456,
+      "text_bytes": 1452,
+      "initialized_data_bytes": 4,
+      "uploaded_end_exclusive": "0x01c205b0",
+      "initialized_entry_marker_address": "0x01c205ac",
+      "initialized_entry_marker_value": "0x46524d31",
+      "state_extent": [
+        "0x01c205b0",
+        "0x01c205cc"
+      ],
+      "scratch_extent": [
+        "0x01c205cc",
+        "0x01c206cc"
+      ],
+      "bss_end_exclusive": "0x01c206cc",
+      "reserved_end_exclusive": "0x01c28000",
+      "function_count": 12
+    },
+    "independent_checks": {
+      "elf32_pi32v2_entry_sections_symbols": "PASS",
+      "all_current_source_hashes_match_build_receipt": true,
+      "source_build_fingerprint_recomputed": true,
+      "all_recorded_output_hashes_match": true,
+      "identity_immediates_encode_exact_build_id": true,
+      "raw_image_equals_exact_elf_text_plus_initialized_data": true,
+      "listing_rows_byte_matched": 506,
+      "text_bytes_covered_once": 1452,
+      "unknown_instructions": 0,
+      "four_byte_local_call_tailjump_displacements_independently_decoded": 34,
+      "indirect_call_sites": [
+        "0x01c20376"
+      ],
+      "indirect_call_source": "state.send, validated at entry; return ABI uninterpreted",
+      "undefined_symbols": [],
+      "unexpected_allocated_sections": [],
+      "test_destructive_or_optional_feature_symbols": [],
+      "compared_to_manually_reviewed_build4": "Only four build-ID immediate instructions differ; all remaining raw bytes and wl82.o identical",
+      "instruction_offsets_changed_since_build4": [
+        "0x314",
+        "0x318",
+        "0x31c",
+        "0x320"
+      ]
+    },
+    "selected_decoded_closure": {
+      "accepted_cdbs": [
+        "FC40",
+        "FC0B",
+        "FD05"
+      ],
+      "raw_read_bytes": 256,
+      "capacity_bytes": 1048576,
+      "read_address_alignment": 256,
+      "maximum_read_address": "0x000fff00",
+      "nor_first_opcodes": [
+        "9F",
+        "03"
+      ],
+      "receive_callback_called": false,
+      "direct_vendor_initializer_0x01e00428": false,
+      "unknown_command_rom_fallback": false,
+      "nor_write_erase_status_unprotect_path": false,
+      "clock_p33_display_efuse_crc_path": false,
+      "poll_iterations_per_operation": 262144,
+      "local_stack_peak_bytes": {
+        "entry": 68,
+        "handler_read": 72,
+        "handler_before_opaque_send": 36
+      },
+      "stack_excludes": [
+        "opaque ROM sender",
+        "ROM caller",
+        "interrupt envelope",
+        "recursive reentry"
+      ]
+    },
+    "residual_gates": [
+      "Actual selected ROM invokes the hook before destructive dispatch and supplies a fresh complete31-byte CBW",
+      "Actual supplied stack/IRQ and code/state/scratch/interface/slot/CBW/answer ownership and lifetime",
+      "Opaque ROM sender blocking/consumption/completion and next-BOT ordering; completed_dma is not USB success",
+      "Actual pending/W1C, cache/MMIO/DMA cancellation and raw SPI/chip/timing semantics",
+      "Selected stock entry/access/continuity and original-stock return; strict host M2 and limited M3 remain absent"
+    ],
+    "hardware_access": false,
+    "network_access_by_reviewer": false,
+    "target_execution_or_emulation": false,
+    "build_run_by_reviewer": false,
+    "flash_write": false,
+    "runtime_profile_enabled": false,
+    "reproducible_second_build": "not claimed by this receipt; root owns build7 comparison"
+  },
+  "reproducibility": {
+    "build_id": "3830fc94",
+    "input_fingerprint": "3830fc9499f6a2a16cfcb2f2a6a57b2b623c1828f070adccb81ce15d11189a44",
+    "outputs_compared": 12,
+    "all_output_bytes_identical": true,
+    "receipts_identical": true,
+    "binary": {
+      "bytes": 1456,
+      "sha256": "63c12a9ded28b53fa991c8261cbc8065ef93f8e71a805f53553999175422618a"
+    },
+    "elf": {
+      "bytes": 3744,
+      "sha256": "f5078a8a399897565a35d4f4324e4d1676d880192b775e31770cef5d9d653c67"
+    },
+    "hardware_access": false,
+    "target_execution_or_emulation": false
+  },
+  "host_tests": {
+    "compiler": "Apple clang 21.0.0 (clang-2100.3.34.2)",
+    "host": "macOS arm64",
+    "c_standard": "c11",
+    "flags": [
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-fsanitize=address,undefined"
+    ],
+    "fake_core": {
+      "passed": true,
+      "forbidden_opcodes_checked": 65533,
+      "unsupported_jedec_single_byte_variants_checked": 765,
+      "independent_literal_vectors": true,
+      "dirty_state_pointer_bounds_permanent_failure_reentrancy": true
+    },
+    "actual_hal_fake_mmio": {
+      "passed": true,
+      "jedec_completion_fault_phases": 4,
+      "read_completion_fault_phases": 5,
+      "poll_budget": 262144,
+      "models_pending_w1c": true,
+      "models_dma_data_or_physical_chip": false
+    },
+    "artifact_mutations": {
+      "passed": true,
+      "test_methods": 37,
+      "artifact": "target/fmr-reader/build-6",
+      "command": "python3 ram-reader/tests/test_artifact.py --artifact target/fmr-reader/build-6"
+    },
+    "instructions": "ram-reader/tests/README.md",
+    "source_sha256": {
+      "ram-reader/LICENSE": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "ram-reader/NOTICE": "91f6ef33ae158e13e29b43413432cfd35599ac0659d80616d8e8ecee0132363b",
+      "ram-reader/tests/core_test.c": "ce8aaf257c2f7e3943300fd00a1e484ddcf162af74f1d9999ba8d03fef4e9262",
+      "ram-reader/tests/golden_vectors.h": "47b529a8c37f3dd086f3aedfeb27a939a27ab4d4575e4ac8ea98fb062a8bedf1",
+      "ram-reader/tests/mmio_test.c": "b77b3d47fccd4106bf387809f88eac0a07d5448b469f453d0a12327e611812a8",
+      "ram-reader/tests/test_artifact.py": "f019075528ba51bf92b26f725ab124618d560e1bea9608939647632a4eda3b03"
+    }
+  },
+  "physical_facts": {
+    "hardware_access": false,
+    "target_execution_or_emulation": false,
+    "flash_write": false,
+    "strict_runtime_profile_enabled": false,
+    "original_stock_entry_qualified": false,
+    "read_return_qualified": false,
+    "full_backup_accepted": false
+  }
+}

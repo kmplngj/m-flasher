@@ -1,0 +1,105 @@
+{
+  "schema": "fmr-complete-raw-capture-observation-v1",
+  "date": "2026-10-16",
+  "scope": {
+    "device": "one owner M-VAVE FM-1",
+    "starting_firmware": "Stock V15",
+    "host": "Apple Silicon macOS 27.0.1",
+    "route": "one software MIDI entry, exact FMR1 RAM image, selected native USB, manual cold return"
+  },
+  "artifact": {
+    "reader_bytes": 1456,
+    "reader_sha256": "63c12a9ded28b53fa991c8261cbc8065ef93f8e71a805f53553999175422618a",
+    "cli_sha256": "e13933dd8c590dbbeab66131ab8e18629f3f22af130c25a2361ee4eee550ea47",
+    "base_commit": "9f454ea10dae40fd0dc66d273beb117790abc142",
+    "runtime_source_sha256": {
+      "Cargo.lock": "9e51960f0937cfbe4c05e837f6a331b05f55d6e084d548cbacf917f4955855ea",
+      "Cargo.toml": "34ca1398c8ab55002648ff42a4a9b022140db1556eed72ee5ece2ce662edbc85",
+      "build.rs": "97a4f36be5538e25431f82240d1fb1100efc2464f531442968edd6cf33d521f4",
+      "src/cli.rs": "adb777e75761596b1d51b63e49ed9e8579f534327c8c666974199c67ba396f17",
+      "src/fmr_backup_cli.rs": "5768aae8285875c25979304468aa9d8636c96682b12791796490c33e9387c9ea",
+      "src/fmr_backup_exchange.rs": "c2086ef794ec3070967d2a9832d7b9798ee2b34f50169ebcf3be024f390a6fa7",
+      "src/fmr_backup_ipc.rs": "550c31bfb77b5ad2ed6743d410e97ab33328f057c16d004c614fedd518047a5e",
+      "src/fmr_backup_options.rs": "6a75d0251ca80f01e30a10e0597d2aed1206a9ff4d6fdfc0b0e2edd2a1756302",
+      "src/fmr_backup_pipe.rs": "06fb5821f53c8368b56216292f1eab31f8624d4452cefbae55faf75d69f9528f",
+      "src/fmr_bootstrap.rs": "37905182604eaec85bd6a7474058cf956dea9a3836255a3a06936197c4f71e0a",
+      "src/fmr_bot.rs": "db1d4082d44d7ba59f88542e4be42af3b0fc69f7d584da89e517da7519c8341b",
+      "src/fmr_capture.c": "79cfa605eae3bfed26635ffadaad2299daa8b6903d8cdb00f955440dfec64336",
+      "src/fmr_cli.rs": "b7ac20ce77eb750a701684399f02b368d362091ed64872ca70fd0a35758a4ed3",
+      "src/fmr_full.rs": "4c5fdc7fda5c88d594d9ebd95b11a38d955fbf80e6fc99aadd4bff74c9dd5372",
+      "src/fmr_ipc.rs": "168794c7f16451f204f0b6bec0da0cb9e588c2afcb4f5a785a461b10fc9b3748",
+      "src/fmr_job_guard.rs": "37f6e394e9f98fbaa0aa4dd0957a849ddc44d4c829667684e60b397b0ec118f9",
+      "src/fmr_native.rs": "397d75c78442bcecebeb3a6bf3fec0f88ff72cbbe85783aae68a423d2e5a4da8",
+      "src/fmr_options.rs": "18d864732a1548f4051987b9d76f8a78d22dbe241ec9d59f0a886c2936408855",
+      "src/fmr_reader.rs": "e0566b5817b46b1cd7725cc9f428ced88b24d41a3f09a9ff6e127ce7737ce2d0",
+      "src/fmr_storage.rs": "a94fc75e1ed250e0ea0dc078ae75e274a7e6ce5b271fd6c2ef3a382e354ecae2",
+      "src/macos.rs": "04480f7a7346412616efa01f7a20dde222a898a978829ad02fe7f232818998e1",
+      "src/main.rs": "2a13ab57ea1ca06a20d62948ab41bfac18b6258e46a04ecbe11232b39b3f0b3d",
+      "tools/fmr_stock_entry.c": "82e6db59540cc72a4f509dfac7f4025c324df76530f1bf996f1b5ac9f0e38265"
+    }
+  },
+  "acquisition": {
+    "tail_samples": 2,
+    "tail_address": 1048320,
+    "bytes_per_tail_sample": 256,
+    "fresh_complete_passes": 2,
+    "bytes_per_pass": 1048576,
+    "coverage": "[0,1048576)",
+    "raw_representation": "stored bytes including encrypted areas",
+    "sha256_equal": true,
+    "byte_equal": true,
+    "completed_dma_counter": 8194,
+    "final_identity_and_jedec_after_storage": true,
+    "head_equals_prior_small_check": true,
+    "total_cli_seconds": 11.275
+  },
+  "storage": {
+    "protected_copies": 2,
+    "private_directories": "0700, empty macOS extended ACL",
+    "private_files": "0600, empty macOS extended ACL, one link",
+    "exclusive_creation": true,
+    "fsync_fullsync_directory_sync": true,
+    "reopened_sha256_and_bytes_equal": true,
+    "different_filesystems": false,
+    "independent_media": false,
+    "physical_media_independence_verified": false,
+    "policy": "two separate directories on the same filesystem explicitly chosen by owner"
+  },
+  "return": {
+    "human_cold_cycle_confirmed": true,
+    "human_normal_stock_ui_confirmed": true,
+    "fresh_usb_object": true,
+    "same_serial_and_location": true,
+    "reported_identity": "FM-1_015",
+    "fresh_reply_equals_before": true
+  },
+  "command_scope": {
+    "bootstrap": [
+      "three FB06 RAM blocks",
+      "one FB08 RAM jump"
+    ],
+    "reader": [
+      "FC40",
+      "FC0B",
+      "FD05"
+    ],
+    "flash_write_commands": false,
+    "status_register_write_commands": false,
+    "FC0A": false,
+    "automatic_reset_retry_fallback": false
+  },
+  "offline_validation": {
+    "cargo_passed": 108,
+    "private_corpus_ignored": 11,
+    "std_guard_passed": 4,
+    "std_shared_passed": 52
+  },
+  "limits": [
+    "Single observed device and macOS host; no universal platform or no-brick guarantee.",
+    "Capacity is the exact JEDEC 856014 1 MiB profile, not arbitrary-chip capacity discovery.",
+    "Two local copies do not protect against failure of their shared physical storage.",
+    "Restore, firmware writes, recovery fault tests and agent flashing cycles remain unqualified.",
+    "Raw contents, raw digest, owner selectors and detailed private receipts are intentionally excluded.",
+    "No firmware sound/preset functional smoke test beyond owner-reported normal screen and fresh MIDI identity was performed."
+  ]
+}

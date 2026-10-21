@@ -11,6 +11,17 @@ the unit is broken. For Windows, macOS and Linux.
 
 ![M-Flasher connected to an FM-1 in download mode, with m-bootloader installed: the device panel, the operations and the flash map](docs/screenshot.jpg)
 
+## Integration fork
+
+This fork follows [jvitkauskas/m-flasher](https://github.com/jvitkauskas/m-flasher)
+and adds the FM-1 read-only backup workflow, saved-file diagnostics, offline test
+isolation. Felucca MIDI OTA uses its maintained
+[Python updater](https://github.com/kmplngj/Felucca/blob/main/tools/fm1_install.py);
+this fork retains upstream's MIDI download-mode soft key. The original issues,
+PRs and exact historical sources remain in
+[m-flasher-legacy](https://github.com/kmplngj/m-flasher-legacy).
+See [repository migration](docs/repository-migration.md) for provenance and limits.
+
 ## What it does
 
 - **Back up** the whole flash, and **restore** a backup.
@@ -20,6 +31,8 @@ the unit is broken. For Windows, macOS and Linux.
   write, exactly what will change.
 - Checks the package is for this model, writes only what changes, and
   verifies everything written: see [Safety](docs/safety.md).
+- **Inspect saved dumps**, compare files and export sanitized recovery diagnostics
+  without discovering or connecting a device ([file-only commands](docs/saved-diagnostics.md)).
 - A command line as well as the window.
 
 ## Getting started
@@ -45,12 +58,19 @@ a recovery menu for when the firmware does not start.
 
 - [Using M-Flasher](docs/usage.md): each system, download mode, the actions,
   the command line
+- [Saved-file inspection and diagnostics](docs/saved-diagnostics.md): offline integrity,
+  receipt checks, sanitized support output and advisory dry plans
 - [Safety](docs/safety.md): what is checked before and after every write
 - [How it works](docs/development.md): the protocol, the source, building
+- [Experimental FMR1 reader check](docs/fm1-reader-check.md): selected Stock V15
+  entry, two 256-byte reads and manual return; separate from the existing backup
+- [Complete FMR1 raw backup](docs/fm1-raw-backup.md): two fresh passes, SHA-256
+  comparison and two protected copies, with separate Stock-return evidence
 
 ## Credits and license
 
-MIT ([LICENSE](LICENSE)). Bundled files and their licenses:
+MIT ([LICENSE](LICENSE)); the optional [RAM reader](ram-reader/README.md) is
+Apache-2.0 with its own notices. Bundled files and their licenses:
 [data/NOTICE.md](data/NOTICE.md) and
 [assets/README.md](assets/README.md). The protocol follows
 [jl-uboot-tool](https://github.com/kagaimiq/jl-uboot-tool) by kagaimiq, and the
