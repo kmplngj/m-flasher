@@ -31,35 +31,56 @@ def request(address, length=0, flags=0):
     return message(48, bytes([flags]) + struct.pack('<I', address) + length.to_bytes(3, 'little'))
 
 
-loader = bytearray(544)
-struct.pack_into('<IIB', loader, 4, 32, 512, 65)
-struct.pack_into('<II', loader, 36, 256, 0x01c0a800)
-loader[72:88] = b'FELUCCA-LOADER-1'
-struct.pack_into('<H', loader, 32, crc(loader[34:64]))
-struct.pack_into('<H', loader, 2, crc(loader[32:]))
-struct.pack_into('<H', loader, 0, crc(loader[2:32]))
-flash = b'\xff' * 0x93000
-entries = []
-for typ, offset, data, name in [(0, 1024, flash, b'flash.bin'), (100, 1024+len(flash), loader, b'ota.bin')]:
-    entry = bytearray(80)
-    struct.pack_into('<HHH', entry, 0, typ, 0, crc(data))
-    struct.pack_into('<II', entry, 8, offset, len(data))
-    entry[64:64+len(name)] = name
-    entries.append(cipher(entry))
-header = bytearray(64)
-struct.pack_into('<HIH', header, 2, crc(b''.join(entries)), 1024+len(flash)+len(loader), 2)
-struct.pack_into('<H', header, 0, crc(header[2:]))
-prefix = cipher(header) + b''.join(entries) + bytes(1024-224)
 identity = b'FM-1_906'
-physical = bytearray()
-for block in range(20):
-    physical += prefix[block*47:(block+1)*47]
-    physical.append((identity[block]+block+1) % 256 if block < len(identity) else 125)
-physical += prefix[940:]
+
+
+def make_loader(marker=b'FELUCCA-LOADER-1'):
+    loader = bytearray(544)
+    struct.pack_into('<IIB', loader, 4, 32, 512, 65)
+    struct.pack_into('<II', loader, 36, 256, 0x01c0a800)
+    loader[72:88] = marker
+    struct.pack_into('<H', loader, 32, crc(loader[34:64]))
+    struct.pack_into('<H', loader, 2, crc(loader[32:]))
+    struct.pack_into('<H', loader, 0, crc(loader[2:32]))
+    return loader
+
+
+def make_prefix(flash, loader, product=identity):
+    entries = []
+    for typ, offset, data, name in [(0, 1024, flash, b'flash.bin'), (100, 1024+len(flash), loader, b'ota.bin')]:
+        entry = bytearray(80)
+        struct.pack_into('<HHH', entry, 0, typ, 0, crc(data))
+        struct.pack_into('<II', entry, 8, offset, len(data))
+        entry[64:64+len(name)] = name
+        entries.append(cipher(entry))
+    header = bytearray(64)
+    struct.pack_into('<HIH', header, 2, crc(b''.join(entries)), 1024+len(flash)+len(loader), 2)
+    struct.pack_into('<H', header, 0, crc(header[2:]))
+    prefix = cipher(header) + b''.join(entries) + bytes(1024-224)
+    physical = bytearray()
+    for block in range(20):
+        physical += prefix[block*47:(block+1)*47]
+        physical.append((product[block]+block+1) % 256 if block < len(product) else 125)
+    physical += prefix[940:]
+    return physical, prefix
+
+
+loader = make_loader()
+flash = b'\xff' * 0x93000
+physical, prefix = make_prefix(flash, loader)
+wrong_loader = make_loader(b'FELUCCA-LOADER-2')
+configured = b'FM-1_DEV_2.0-PR7'
 items = dict(PREFIX=physical, LOADER=loader,
+    CONFIGURED_PREFIX=make_prefix(flash, loader, configured)[0],
+    WRONG_LAYOUT_PREFIX=make_prefix(b'\xff' * 0x94000, loader)[0],
+    WRONG_LOADER_PREFIX=make_prefix(flash, wrong_loader)[0], WRONG_LOADER=wrong_loader,
     ID_RUNNING=message(17, b'FM-1_905'.ljust(27,b'\0')),
-    ID_LOADER=message(17, b'ota-FM-1_015'.ljust(27,b'\0')),
+    ID_LOADER=message(17, b'ota-FM-1_900'.ljust(27,b'\0')),
+    ID_OFFICIAL_LOADER=message(17, b'ota-FM-1_015'.ljust(27,b'\0')),
+    ID_UNKNOWN_LOADER=message(17, b'ota-FM-1_999'.ljust(27,b'\0')),
+    ID_WRONG_MODEL_LOADER=message(17, b'ota-SMK-37_900'.ljust(27,b'\0')),
     ID_FINAL=message(17, identity.ljust(27,b'\0')),
+    ID_CONFIGURED=message(17, configured.ljust(27,b'\0')),
     READ=request(3, 5, 7), READ_LATE=request(128, 9, 2), BAD_RANGE=request(0xffffffff,512), BIG_READ=request(0,513), ZERO_READ=request(0,0),
     DONE_CHECK=request(0xe0000000), DONE_WRITE=request(0xf0000000),
     REPLY=message(48, b'\x07'+struct.pack('<I',3)+b'\x05\0\0'+prefix[3:8]))

@@ -86,6 +86,20 @@ impl Image {
             bytes,
         })
     }
+
+    /// `parse` admits only FELUCCA-LOADER-1 with flash.bin [0, 0x93000).
+    /// Its source-defined USB handshake is exactly ota-FM-1_900. The update
+    /// record's ota-FM-1_015 text is not that handshake or compatibility proof.
+    /// A numeric family (including 9xx) does not establish write semantics.
+    fn require_loader(&self, id: &Identity) -> Result<()> {
+        if id.0 != "ota-FM-1_900" {
+            return Err(format!(
+                "incompatible MIDI loader {}: FELUCCA-LOADER-1 with 0x93000-byte flash.bin requires ota-FM-1_900; stopped before loader START/data",
+                id.0
+            ));
+        }
+        Ok(())
+    }
 }
 
 pub fn pack(data: &[u8]) -> Vec<u8> {
@@ -142,6 +156,18 @@ fn frame(wire: &[u8], command: u8, len: usize) -> Option<Vec<u8>> {
     Some(d)
 }
 fn valid_identity(s: &str) -> bool {
+    // Match the build's explicit application product contract. The loader has
+    // its own fixed identity and is never classified by this app suffix.
+    if let Some(version) = s.strip_prefix("FM-1_") {
+        return (1..=15).contains(&version.len())
+            && version.bytes().all(|c| {
+                c.is_ascii_uppercase() || c.is_ascii_digit() || b"._-".contains(&c)
+            })
+            && !s
+                .bytes()
+                .enumerate()
+                .any(|(i, c)| c.wrapping_add(i as u8 + 1) == 0x7d);
+    }
     s.rsplit_once('_').is_some_and(|(m, v)| {
         !m.is_empty()
             && !v.is_empty()
@@ -374,14 +400,19 @@ pub fn install(
     // identities, detour through stock, or claim successful replacement.
     // Felucca permits same-version packages; its display identity alone cannot
     // distinguish PR commits, so the final identity check is deliberately limited.
-    if !id.loader() {
+    let loader_id = if id.loader() {
+        id.clone()
+    } else {
         report("checking package and staging the update loader");
         transfer(io, image, CHECK_DONE, 8, report)?;
         // CoreMIDI queues sends: keep both ports alive until the final reply drains.
         io.pause(seconds(3));
         io.disconnect();
-        reconnect(io, s, true, 30)?;
-    }
+        reconnect(io, s, true, 30)?
+    };
+    // Gate both already-running and newly staged loaders before START or any
+    // package response. Staging may already have written the update records.
+    image.require_loader(&loader_id)?;
     report("writing firmware through its MIDI loader");
     transfer(io, image, WRITE_DONE, 180, report)?;
     io.pause(seconds(3));

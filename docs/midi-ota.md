@@ -65,6 +65,39 @@ no MIDI and performs no update. A passing result establishes cache refresh, not
 a completed FM-1 installation. Firmware/loader handoff remains a separate device
 check with the exact CLI and firmware artifacts.
 
+## Loader/package compatibility (#119)
+
+The native CLI accepts one source-defined package/loader pair. Application
+products follow the build's explicit `FM-1_[A-Z0-9._-]{1,15}` contract (20 bytes
+maximum); the full product must match after reboot. A configured application
+product does not change the loader's fixed identity.
+
+| Selected package | Observed state | Native behavior |
+| --- | --- | --- |
+| Valid `FELUCCA-LOADER-1`, `flash.bin` exactly `0x93000` bytes | Running FM-1 application | Stage the package loader; query the new endpoint; require exactly `ota-FM-1_900` before loader START/data |
+| Same custom package | Already running `ota-FM-1_900` | Resume directly; require the package's full non-loader application identity after reboot |
+| Same custom package | `ota-FM-1_015`, any other loader ID, or wrong model | Refuse before loader START/data; a failed post-stage check does not undo staging |
+| Official V15 or another loader/layout | Any state | Refuse package validation before constructing the native adapter |
+
+This policy comes from Felucca source at
+[`e971e8f97ed66abff20441fccdf43a23c4e9ac13`](https://github.com/kmplngj/Felucca/tree/e971e8f97ed66abff20441fccdf43a23c4e9ac13):
+[`firmware/loader/loader.c`](https://github.com/kmplngj/Felucca/blob/e971e8f97ed66abff20441fccdf43a23c4e9ac13/firmware/loader/loader.c)
+defines the actual handshake `ota-FM-1_900`, while
+[`firmware/loader/ldr_core.c`](https://github.com/kmplngj/Felucca/blob/e971e8f97ed66abff20441fccdf43a23c4e9ac13/firmware/loader/ldr_core.c)
+checks the `0x93000` layout, chip key and package CRC before writing the application.
+[`firmware/src/ota.c`](https://github.com/kmplngj/Felucca/blob/e971e8f97ed66abff20441fccdf43a23c4e9ac13/firmware/src/ota.c)
+uses `ota-FM-1_015` in the staging record for both loader choices. That record
+text does not change the custom loader's USB handshake. The official loader
+has separate whitelisted checks and writes the head too; native custom-package
+validation does not establish that pairing. No `9xx` family inference is made.
+
+Official V15 start/return remains the Felucca Python installer's and maintained
+[browser installer's](https://github.com/hugelton/Felucca-WebApp) separate path;
+the native CLI has no stock-package or force override. Loader identity is an
+advisory compatibility check, not authentication or proof of exact loader bytes.
+Both fresh and resumed native installs retain range/time limits, exact endpoint
+constraints, and mandatory final application identity verification.
+
 ## Scope and hardware validation
 
 Only FM-1 packages with the Felucca loader, its exact 0x93000-byte flash image,
@@ -85,12 +118,17 @@ its application area 0x4000..0x92FFF; it may clear its update records. The host
 does not prove physical readback, data preservation, rollback or bootability.
 Make the backups required by your firmware/data transition separately. Do not
 mistake a staging timeout for proof that nothing was written. After an interrupted
-update, inspect the device state and rerun the same package to finish an active
-loader; no automatic retry/recovery writes are initiated by the CLI.
+update, inspect the device state; rerunning the same package can resume only an
+accepted `ota-FM-1_900` loader. No automatic retry/recovery writes are initiated
+by the CLI, and an intact staging record alone does not prove cold resume.
 
 Host evidence: independent synthetic package/transcript literals, injected MIDI
 I/O and clock, range/framing/phase/send/disconnect/timeout/identity failures, and
-compile-time denial of native MIDI in tests. These tests exercise no device and
+compile-time denial of native MIDI in tests. Independent literals cover custom
+fresh/resumed installs, official/unknown/wrong-model loader refusal before
+phase-two START/data, CRC-valid incompatible package layout/loader, configured
+application products, and final identity mismatch after both entry paths.
+These tests exercise no device and
 execute no firmware. #15's checkpoint/transition gates and #16's external writer
 qualification remain open.
 

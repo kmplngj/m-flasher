@@ -17,6 +17,10 @@ struct Fake {
     phase: usize,
     queue: VecDeque<Vec<u8>>,
     sent: Vec<Vec<u8>>,
+    loader_sent: Vec<Vec<u8>>,
+    loader_identity: Option<&'static [u8]>,
+    final_identity: Option<&'static [u8]>,
+    selections: Vec<Selection>,
     starts: usize,
     inject: Option<Vec<u8>>,
     silent: bool,
@@ -33,7 +37,8 @@ impl Io for Fake {
     fn pause(&mut self, d: Duration) {
         self.tick += d;
     }
-    fn connect(&mut self, _: &Selection) -> Result<()> {
+    fn connect(&mut self, selection: &Selection) -> Result<()> {
+        self.selections.push(selection.clone());
         Ok(())
     }
     fn disconnect(&mut self) {
@@ -47,13 +52,16 @@ impl Io for Fake {
             return Err("injected send failure".into());
         }
         self.sent.push(wire.to_vec());
+        if self.phase == 1 {
+            self.loader_sent.push(wire.to_vec());
+        }
         if wire == QUERY {
             self.queue.push_back(
                 match self.phase {
                     0 => ID_RUNNING,
-                    1 => ID_LOADER,
+                    1 => self.loader_identity.unwrap_or(ID_LOADER),
                     _ if self.wrong_identity => ID_RUNNING,
-                    _ => ID_FINAL,
+                    _ => self.final_identity.unwrap_or(ID_FINAL),
                 }
                 .to_vec(),
             );
@@ -118,9 +126,63 @@ fn independent_package_and_crc_damage_oracles() {
     assert!(Image::parse(&vec![0; MAX_PACKAGE + 1]).is_err());
 }
 #[test]
+fn crc_valid_incompatible_package_layout_and_loader_are_refused() {
+    let layout = [WRONG_LAYOUT_PREFIX, &vec![255; 0x94000], LOADER].concat();
+    assert!(
+        Image::parse(&layout)
+            .err()
+            .unwrap()
+            .contains("flash.bin must be exactly 0x93000")
+    );
+    let loader = [WRONG_LOADER_PREFIX, &vec![255; 0x93000], WRONG_LOADER].concat();
+    assert!(
+        Image::parse(&loader)
+            .err()
+            .unwrap()
+            .contains("unsupported or damaged Felucca OTA loader")
+    );
+}
+#[test]
+fn configured_application_product_keeps_fixed_loader_policy_and_exact_final_check() {
+    let package = [CONFIGURED_PREFIX, &vec![255; 0x93000], LOADER].concat();
+    let image = Image::parse(&package).unwrap();
+    assert_eq!(image.identity, "FM-1_DEV_2.0-PR7");
+    assert_eq!(Identity::parse(ID_CONFIGURED).unwrap().0, image.identity);
+    for phase in [0, 1] {
+        let mut io = Fake {
+            phase,
+            final_identity: Some(ID_CONFIGURED),
+            ..Fake::default()
+        };
+        let id = open(&mut io, &Selection::default()).unwrap();
+        install(&mut io, &Selection::default(), &image, &id, &mut |_| {}).unwrap();
+        assert_eq!(io.starts, 2 - phase);
+        let mut io = Fake {
+            phase,
+            ..Fake::default()
+        };
+        let id = open(&mut io, &Selection::default()).unwrap();
+        assert_eq!(
+            install(&mut io, &Selection::default(), &image, &id, &mut |_| {}).unwrap_err(),
+            "device returned FM-1_906, expected FM-1_DEV_2.0-PR7"
+        );
+    }
+    for invalid in [
+        "FM-1_",
+        "FM-1_lower",
+        "FM-1_A/B",
+        "FM-1_ABCDEFGHIJKLMNOP",
+        "FM-1_É",
+    ] {
+        assert!(!valid_identity(invalid), "accepted invalid product {invalid}");
+    }
+    assert!(valid_identity("FM-1_ABCDEFGHIJKLMNO"));
+    assert!(!valid_identity("ota-FM-1_DEV"));
+}
+#[test]
 fn wire_literals_and_malformed_frames() {
     assert_eq!(Identity::parse(ID_RUNNING).unwrap().0, "FM-1_905");
-    assert!(Identity::parse(ID_LOADER).unwrap().loader());
+    assert_eq!(Identity::parse(ID_LOADER).unwrap().0, "ota-FM-1_900");
     let image = image();
     assert_eq!(answer(7, 3, &image.bytes[3..8]), REPLY);
     let mut bad = READ.to_vec();
@@ -249,16 +311,108 @@ fn existing_loader_resumes_without_restarting_running_stage() {
         phase: 1,
         ..Fake::default()
     };
+    let id = open(&mut io, &Selection::default()).unwrap();
     install(
         &mut io,
         &Selection::default(),
         &image(),
-        &Identity("ota-FM-1_015".into()),
+        &id,
         &mut |_| {},
     )
     .unwrap();
     assert_eq!(io.starts, 1);
+    assert_eq!(io.phase, 2);
     assert!(!io.dropped_early);
+}
+#[test]
+fn incompatible_running_loaders_send_no_start_or_package_data() {
+    for wire in [ID_OFFICIAL_LOADER, ID_UNKNOWN_LOADER] {
+        let mut io = Fake {
+            phase: 1,
+            ..Fake::default()
+        };
+        let id = Identity::parse(wire).unwrap();
+        let error = install(
+            &mut io,
+            &Selection::default(),
+            &image(),
+            &id,
+            &mut |_| {},
+        )
+        .unwrap_err();
+        assert!(error.contains(&format!("incompatible MIDI loader {}", id.0)));
+        assert!(error.contains("requires ota-FM-1_900"));
+        assert!(io.sent.is_empty());
+        assert_eq!(io.starts, 0);
+    }
+}
+#[test]
+fn incompatible_discovered_loaders_send_no_phase_two_start_or_data() {
+    for wire in [ID_OFFICIAL_LOADER, ID_UNKNOWN_LOADER] {
+        let mut io = Fake {
+            loader_identity: Some(wire),
+            ..Fake::default()
+        };
+        let error = install(
+            &mut io,
+            &Selection::default(),
+            &image(),
+            &Identity("FM-1_905".into()),
+            &mut |_| {},
+        )
+        .unwrap_err();
+        assert!(error.contains("incompatible MIDI loader"));
+        assert!(error.contains("stopped before loader START/data"));
+        assert_eq!(io.phase, 1, "only staging completed");
+        assert_eq!(io.starts, 1);
+        assert_eq!(io.loader_sent, vec![QUERY.to_vec()]);
+        assert!(!io.dropped_early);
+    }
+}
+#[test]
+fn fresh_and_resumed_updates_require_exact_returned_application_identity() {
+    for phase in [0, 1] {
+        let mut io = Fake {
+            phase,
+            wrong_identity: true,
+            ..Fake::default()
+        };
+        let mut reports = Vec::new();
+        let id = open(&mut io, &Selection::default()).unwrap();
+        let error = install(
+            &mut io,
+            &Selection::default(),
+            &image(),
+            &id,
+            &mut |message| reports.push(message.to_string()),
+        )
+        .unwrap_err();
+        assert_eq!(error, "device returned FM-1_905, expected FM-1_906");
+        assert_eq!(io.starts, 2 - phase);
+        assert_eq!(io.phase, 2);
+        assert!(
+            !reports
+                .iter()
+                .any(|s| s.starts_with("done:") || s.starts_with("OTA exchange completed"))
+        );
+    }
+}
+#[test]
+fn exact_endpoint_constraints_survive_both_successful_handoffs() {
+    let selection = Selection {
+        port: None,
+        input: Some("selected input".into()),
+        output: Some("selected output".into()),
+    };
+    let mut io = Fake::default();
+    let id = open(&mut io, &selection).unwrap();
+    install(&mut io, &selection, &image(), &id, &mut |_| {}).unwrap();
+    assert_eq!(io.selections.len(), 3);
+    for seen in io.selections {
+        assert_eq!(seen.port, selection.port);
+        assert_eq!(seen.input, selection.input);
+        assert_eq!(seen.output, selection.output);
+    }
 }
 #[test]
 fn bad_ranges_phase_send_disconnect_and_idle_never_report_success() {
@@ -312,18 +466,41 @@ fn bad_ranges_phase_send_disconnect_and_idle_never_report_success() {
 }
 #[test]
 fn wrong_model_never_sends_upgrade() {
-    let mut io = Fake::default();
+    for id in ["SMK-37_015", "ota-SMK-37_900"] {
+        let mut io = Fake::default();
+        assert!(
+            install(
+                &mut io,
+                &Selection::default(),
+                &image(),
+                &Identity(id.into()),
+                &mut |_| {}
+            )
+            .is_err()
+        );
+        assert!(io.sent.is_empty());
+    }
+}
+#[test]
+fn wrong_model_after_staging_never_receives_phase_two_start_or_data() {
+    let mut io = Fake {
+        loader_identity: Some(ID_WRONG_MODEL_LOADER),
+        ..Fake::default()
+    };
     assert!(
         install(
             &mut io,
             &Selection::default(),
             &image(),
-            &Identity("SMK-37_015".into()),
-            &mut |_| {}
+            &Identity("FM-1_905".into()),
+            &mut |_| {},
         )
-        .is_err()
+        .unwrap_err()
+        .contains("update loader did not appear")
     );
-    assert!(io.sent.is_empty());
+    assert_eq!(io.starts, 1);
+    assert_eq!(io.phase, 1);
+    assert!(io.loader_sent.iter().all(|wire| wire.as_slice() == QUERY));
 }
 
 #[test]
