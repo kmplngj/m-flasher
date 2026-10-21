@@ -17,6 +17,9 @@ const USAGE: &str = "usage: m-flasher [find | download-mode | info | backup [DIR
                  firmware PACKAGE.fwsc [--with-bootloader] [--wipe-settings] |
                  bootloader [--stock PACKAGE.fwsc | --file UBOOT.boot]]
        options: --device PATH  --board fm1|smk37  --backup-dir DIR  --yes
+       inspect | verify | dry-plan --help: saved-file diagnostics (no device access)
+       reader-check --help: bounded experimental read-only RAM-reader check
+       raw-backup --help: two fresh complete raw reads and protected copies
        without arguments: the window";
 
 pub fn default_backup_dir() -> PathBuf {
@@ -89,6 +92,19 @@ fn download_mode() -> Result<(), Error> {
 }
 
 pub fn run(args: Vec<String>) -> i32 {
+    if args.first().is_some_and(|s| s == "midi" || s == "--capabilities") {
+        return crate::midi_cli::run(&args);
+    }
+    if args.first().is_some_and(|s| matches!(s.as_str(), "inspect" | "verify" | "dry-plan")) {
+        return crate::saved_cli::run(&args);
+    }
+    if args.first().map(String::as_str) == Some("raw-backup") {
+        return crate::fmr_backup_cli::run(&args[1..]);
+    }
+    // Keep the qualification path completely outside Connection::start/Session.
+    if args.first().map(String::as_str) == Some("reader-check") {
+        return crate::fmr_cli::run(&args[1..]);
+    }
     match main(args) {
         Ok(()) => 0,
         Err(e) => {

@@ -55,7 +55,7 @@ fn cmd_name(cdb: &[u8]) -> String {
 
 // ---------------------------------------------------------------- Linux ---
 
-#[cfg(all(target_os = "linux", not(feature = "usb")))]
+#[cfg(all(not(any(test, feature = "offline-tests")), target_os = "linux", not(feature = "usb")))]
 mod imp {
     use super::*;
     use std::fs::{File, OpenOptions};
@@ -173,7 +173,7 @@ mod imp {
 
 // -------------------------------------------------------------- Windows ---
 
-#[cfg(windows)]
+#[cfg(all(not(any(test, feature = "offline-tests")), windows))]
 mod imp {
     use super::*;
     use std::ffi::c_void;
@@ -334,20 +334,20 @@ mod imp {
 
 // --------------------------------------------------- macOS: USB directly ---
 
-#[cfg(any(target_os = "macos", all(target_os = "linux", feature = "usb")))]
+#[cfg(all(not(any(test, feature = "offline-tests")), any(target_os = "macos", all(target_os = "linux", feature = "usb"))))]
 #[path = "usb.rs"]
 mod usb;
-#[cfg(all(target_os = "linux", feature = "usb"))]
+#[cfg(all(not(any(test, feature = "offline-tests")), target_os = "linux", feature = "usb"))]
 use usb as imp;
-#[cfg(target_os = "macos")]
+#[cfg(all(not(any(test, feature = "offline-tests")), target_os = "macos"))]
 #[path = "macos.rs"]
 pub mod macos;
-#[cfg(target_os = "macos")]
+#[cfg(all(not(any(test, feature = "offline-tests")), target_os = "macos"))]
 use macos as imp;
 
 // ---------------------------------------------------------------- other ---
 
-#[cfg(not(any(target_os = "linux", windows, target_os = "macos")))]
+#[cfg(all(not(any(test, feature = "offline-tests")), not(any(target_os = "linux", windows, target_os = "macos"))))]
 mod imp {
     use super::*;
 
@@ -369,5 +369,12 @@ mod imp {
         vec![]
     }
 }
+
+// Selected at compile time, before the test harness can call an adapter.
+#[cfg(any(test, feature = "offline-tests"))]
+#[path = "offline_hardware.rs"]
+pub mod offline_hardware;
+#[cfg(any(test, feature = "offline-tests"))]
+use offline_hardware as imp;
 
 pub use imp::{Device, find_devices};

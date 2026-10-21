@@ -11,6 +11,16 @@ the unit is broken. For Windows, macOS and Linux.
 
 ![M-Flasher connected to an FM-1 in download mode, with m-bootloader installed: the device panel, the operations and the flash map](docs/screenshot.jpg)
 
+## Integration fork
+
+This fork follows [jvitkauskas/m-flasher](https://github.com/jvitkauskas/m-flasher)
+and adds the FM-1 read-only backup workflow, saved-file diagnostics, offline test
+isolation and optional Felucca MIDI OTA. The port onto the recreated upstream is
+under review; it is not a hardware qualification or release. The original issues,
+PRs and exact historical sources remain in
+[m-flasher-legacy](https://github.com/kmplngj/m-flasher-legacy).
+See [repository migration](docs/repository-migration.md) for provenance and limits.
+
 ## What it does
 
 - **Back up** the whole flash, and **restore** a backup.
@@ -20,7 +30,10 @@ the unit is broken. For Windows, macOS and Linux.
   write, exactly what will change.
 - Checks the package is for this model, writes only what changes, and
   verifies everything written: see [Safety](docs/safety.md).
+- **Inspect saved dumps**, compare files and export sanitized recovery diagnostics
+  without discovering or connecting a device ([file-only commands](docs/saved-diagnostics.md)).
 - A command line as well as the window.
+- Optional [native MIDI OTA](docs/midi-ota.md) for Felucca FM-1 packages, without Python MIDI dependencies. The MIDI-only CLI is available from successful native MIDI Actions builds; normal release packages retain their existing features until a release explicitly includes MIDI.
 
 ## Getting started
 
@@ -45,8 +58,14 @@ a recovery menu for when the firmware does not start.
 
 - [Using M-Flasher](docs/usage.md): each system, download mode, the actions,
   the command line
+- [Saved-file inspection and diagnostics](docs/saved-diagnostics.md): offline integrity,
+  receipt checks, sanitized support output and advisory dry plans
 - [Safety](docs/safety.md): what is checked before and after every write
 - [How it works](docs/development.md): the protocol, the source, building
+- [Experimental FMR1 reader check](docs/fm1-reader-check.md): selected Stock V15
+  entry, two 256-byte reads and manual return; separate from the existing backup
+- [Complete FMR1 raw backup](docs/fm1-raw-backup.md): two fresh passes, SHA-256
+  comparison and two protected copies, with separate Stock-return evidence
 
 ## Credits and license
 

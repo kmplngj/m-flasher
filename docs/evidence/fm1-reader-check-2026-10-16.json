@@ -1,0 +1,82 @@
+{
+  "schema": 1,
+  "kind": "limited-physical-head-read-and-stock-return-observation",
+  "date": "2026-10-16",
+  "platform": {
+    "os": "macOS",
+    "version": "27.0.1",
+    "architecture": "Apple Silicon"
+  },
+  "cli_sha256": "008e7cf9dff8e5cad88839b9d11aa6e036b6b552aeb332332fae1620ea995693",
+  "reader": {
+    "build_id": "3830fc94",
+    "bytes": 1456,
+    "sha256": "63c12a9ded28b53fa991c8261cbc8065ef93f8e71a805f53553999175422618a"
+  },
+  "source_sha256": {
+    "Cargo.toml": "34ca1398c8ab55002648ff42a4a9b022140db1556eed72ee5ece2ce662edbc85",
+    "Cargo.lock": "9e51960f0937cfbe4c05e837f6a331b05f55d6e084d548cbacf917f4955855ea",
+    "build.rs": "97a4f36be5538e25431f82240d1fb1100efc2464f531442968edd6cf33d521f4",
+    "src/main.rs": "434bb42502becd68ca379f16b369872cf6c2194c42f4616dfca352e279421ca6",
+    "src/cli.rs": "e38cd27b1cfae75db83fb4f8c0172c7c129765e4a09d819fda3df05fabc229ec",
+    "src/macos.rs": "d03446fd2a00d15adb709bd96d994cdda1222b859cbddb127709bb5825ea07d2",
+    "src/fmr_cli.rs": "50439244e849a89413d2c350ab34b80283c1acf5b03762379dd7ff97fc776f50",
+    "src/fmr_options.rs": "18d864732a1548f4051987b9d76f8a78d22dbe241ec9d59f0a886c2936408855",
+    "src/fmr_ipc.rs": "168794c7f16451f204f0b6bec0da0cb9e588c2afcb4f5a785a461b10fc9b3748",
+    "src/fmr_reader.rs": "e0566b5817b46b1cd7725cc9f428ced88b24d41a3f09a9ff6e127ce7737ce2d0",
+    "src/fmr_bot.rs": "db1d4082d44d7ba59f88542e4be42af3b0fc69f7d584da89e517da7519c8341b",
+    "src/fmr_bootstrap.rs": "37905182604eaec85bd6a7474058cf956dea9a3836255a3a06936197c4f71e0a",
+    "src/fmr_native.rs": "397d75c78442bcecebeb3a6bf3fec0f88ff72cbbe85783aae68a423d2e5a4da8",
+    "src/fmr_capture.c": "79cfa605eae3bfed26635ffadaad2299daa8b6903d8cdb00f955440dfec64336",
+    "tools/fmr_stock_entry.c": "82e6db59540cc72a4f509dfac7f4025c324df76530f1bf996f1b5ac9f0e38265"
+  },
+  "stock_identity_before": "FM-1_015",
+  "stock_identity_after": "FM-1_015",
+  "entry": {
+    "fixed_v15_midi_requests": 1,
+    "new_rom_object_at_selected_port": true,
+    "initial_selected_root_capture": true
+  },
+  "read": {
+    "physical_address": 0,
+    "fresh_fd05_commands": 2,
+    "bytes_per_command": 256,
+    "samples_equal": true,
+    "nonconstant_samples": true,
+    "validated_jedec": "856014",
+    "validated_capacity": 1048576,
+    "validated_dma_counts": [
+      0,
+      1,
+      2
+    ],
+    "strict_bot_checks_passed": true,
+    "private_file_reopen_verification": true
+  },
+  "return": {
+    "operator_performed_manual_cold_power_cycle": true,
+    "operator_reported_normal_stock_screen": true,
+    "new_normal_usb_object": true,
+    "fresh_identity_reply_matches_before": true
+  },
+  "flash_or_status_programming_commands_requested": false,
+  "automatic_retry_reset_fallback": false,
+  "full_backup": false,
+  "tail_read": false,
+  "private_capture_data_published": false,
+  "usb_bus_trace_captured": false,
+  "offline_validation": {
+    "std_only_passed": 42,
+    "guarded_cargo_passed": 59,
+    "private_corpus_ignored": 11,
+    "artifact_mutation_passed": 37,
+    "dedicated_helper_negative_cases": 4
+  },
+  "limits": [
+    "one selected device, exact image and macOS route",
+    "only two reads at physical address zero",
+    "no full-flash before/after integrity comparison",
+    "no full capture, writer, restore, fault-injection or recovery qualification",
+    "no other platform/source-firmware qualification"
+  ]
+}

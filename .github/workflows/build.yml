@@ -19,6 +19,14 @@ jobs:
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v7
+      - uses: actions/cache@v5
+        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-${{ runner.arch }}-gui-v1-${{ hashFiles('Cargo.lock') }}
       - name: Rust (if the image lacks it)
         run: |
           if ! command -v cargo >/dev/null; then
@@ -97,6 +105,14 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v7
+      - uses: actions/cache@v5
+        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-${{ runner.arch }}-gui-v1-${{ hashFiles('Cargo.lock') }}
       - run: cargo test --release
       - run: cargo build --release
       - name: Package
@@ -117,6 +133,14 @@ jobs:
     runs-on: macos-14
     steps:
       - uses: actions/checkout@v7
+      - uses: actions/cache@v5
+        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-${{ runner.arch }}-gui-v1-${{ hashFiles('Cargo.lock') }}
       - run: rustup target add x86_64-apple-darwin
       - run: cargo test --release
       - name: Build for Apple silicon and Intel

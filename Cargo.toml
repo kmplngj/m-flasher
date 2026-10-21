@@ -6,6 +6,11 @@ description = "Back up, restore and install firmware/bootloaders on the M-VAVE F
 license = "MIT"
 build = "build.rs"
 
+[workspace]
+members = ["midi-cli"]
+default-members = ["."]
+resolver = "3"
+
 [dependencies]
 eframe = { version = "0.36", default-features = false, features = ["glow", "wayland", "x11", "default_fonts"] }
 rfd = "0.17"
@@ -13,6 +18,7 @@ sha2 = "0.11"
 chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
 skrifa = "0.44"
 lyon_tessellation = "1"
+midir-ota = { package = "midir", version = "=0.10.3", optional = true }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 libc = "0.2"
@@ -23,7 +29,18 @@ rusb = { version = "0.9", features = ["vendored"] }
 libc = "0.2"
 midir = "0.11"
 
+[target.'cfg(any(target_os = "macos", target_os = "linux"))'.dependencies]
+# Selected-device access for the experimental reader. Its macOS inventory
+# reads registry metadata, avoiding libusb's initialization-time device probes.
+nusb = { version = "=0.2.8", optional = true, default-features = false }
+
 [features]
+midi = ["dep:midir-ota"]
+# Compile host adapters out for file-only tests. No native hardware calls.
+offline-tests = []
+# Explicit opt-in for the bounded FMR1 hardware qualification command.
+# Normal releases do not activate this experimental reader adapter.
+reader-qualification = ["dep:nusb"]
 # Linux: talk to the unit through libusb (as on macOS) instead of SCSI generic
 usb = ["dep:rusb"]
 
@@ -32,6 +49,7 @@ midir = "0.11"
 windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_Security", "Win32_Storage_FileSystem", "Win32_System_IO", "Win32_System_Ioctl", "Win32_Storage_IscsiDisc", "Win32_System_Console", "Win32_UI_Shell"] }
 
 [build-dependencies]
+cc = "1.8"
 embed-manifest = "1.5"
 winresource = "0.1"
 

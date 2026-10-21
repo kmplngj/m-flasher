@@ -59,9 +59,15 @@ flash loader, the m-bootloader builds and the fonts are all inside it.
 ## Building
 
 ```sh
-cargo build --release          # target/release/m-flasher
-cargo test --release           # FLASHER_TEST_DATA=DIR adds the tests with real flash images
+cargo build --release          # existing GUI/ROM CLI
+cargo build --release --locked -p m-flasher-midi  # small MIDI-only CLI
+# Or include MIDI in the full application: cargo build --release --locked --features midi
+python3 tools/run_offline_tests.py          # no Cargo dependencies or native adapters
+python3 tools/run_offline_tests.py --cargo  # full suite, locked dependencies already cached
 ```
+
+[Offline test instructions](offline-tests.md) explain the compile-time guard,
+explicitly ignored private corpus, and the remaining coverage.
 
 GitHub Actions (`.github/workflows/build.yml`) builds and tests the Linux,
 Windows and macOS packages for every push, and publishes them as a release

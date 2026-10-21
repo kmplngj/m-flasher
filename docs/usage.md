@@ -117,6 +117,11 @@ and need a typed `yes`, or `--yes`.
   over SSH: macOS asks about the removable volume only on the screen.
 - Linux: `m-flasher info` (from the tarball: `./m-flasher info`); `man m-flasher` with the packages.
 
+## Optional MIDI OTA
+
+See [MIDI OTA](midi-ota.md) for the separate native MIDI CLI and exact setup.
+`m-flasher midi firmware PACKAGE.fwsc` uses running firmware, not download mode.
+
 ## Slow USB ports
 
 A full read takes about 1.2 s and a firmware install about 10 s. Some USB
@@ -124,3 +129,10 @@ controllers are much slower with the unit (all ports of AMD's 600-series
 chipset controller, for example: about 4.5 s for a read). The log shows the
 read speed and suggests another port when it is slow; a port at the back,
 next to the video outputs, is often on a faster controller.
+
+## Saved-file diagnostics (no device)
+
+Use `inspect FILE --support`, `verify FILE --compare SECOND --support`, or
+`dry-plan SAVED_RAW PACKAGE.fwsc --support` with a disconnected unit. These
+commands bypass discovery and never execute a write. See [saved diagnostics](saved-diagnostics.md)
+for the full grammar, private hashes/receipts, exit codes and advisory limits.

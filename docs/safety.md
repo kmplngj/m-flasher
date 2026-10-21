@@ -1,5 +1,9 @@
 # Safety
 
+The rules below describe the ROM USB route. The explicitly selected
+[MIDI OTA route](midi-ota.md) delegates staging/writing to the package loader;
+it creates no raw backup and does not provide the ROM route’s readback/checkpoint guarantees.
+
 What M-Flasher checks, so that a write cannot leave the unit worse off than a
 backup can repair.
 
