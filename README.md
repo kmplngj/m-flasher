@@ -16,7 +16,7 @@ the unit is broken. For Windows, macOS and Linux.
 This fork follows [jvitkauskas/m-flasher](https://github.com/jvitkauskas/m-flasher)
 and adds the FM-1 read-only backup workflow, saved-file diagnostics, offline test
 isolation and optional Felucca MIDI OTA. The port onto the recreated upstream is
-prepared on a migration branch, pending creation of the fresh fork; it is not a hardware qualification or release. The original issues,
+under review in the fresh fork; it is not a hardware qualification or release. The original issues,
 PRs and exact historical sources remain in
 [m-flasher-legacy](https://github.com/kmplngj/m-flasher-legacy).
 See [repository migration](docs/repository-migration.md) for provenance and limits.

@@ -7,13 +7,12 @@ Actions history and pinned installer commit remain accessible. The legacy
 repository remains writable for the remaining open loader-safety PR.
 The canonical work tracker for the existing FM-1 roadmap stays there.
 
-The source port is staged in that repository. Creating the fresh fork is pending:
-GitHub returned `403 Resource not accessible by integration` for fork creation
-with the current credential. The owner must create the fresh fork before the
-prepared branch can be pushed there and a draft backport PR opened.
-
-[`kmplngj/m-flasher`](https://github.com/kmplngj/m-flasher) will be a fresh GitHub fork
+[`kmplngj/m-flasher`](https://github.com/kmplngj/m-flasher) is a fresh GitHub fork
 of the recreated [`jvitkauskas/m-flasher`](https://github.com/jvitkauskas/m-flasher).
+Its repository ID is `1428000725` and its parent ID is `1423336301`. The backport
+is on `kori/recreated-upstream-backport` for draft review; `main` retains the
+upstream baseline until review and an authorized merge.
+
 The recreated upstream has unrelated Git history. This port starts at upstream
 `7cd66e0` (0.5.1) and applies only our changes since old upstream `9d96274`,
 with adaptations for the newer source. It does not merge the unrelated histories
@@ -58,8 +57,8 @@ revision. The migration PR is not a replacement binary or release.
 
 ## Validation and review status
 
-The source port is staged on `kori/recreated-upstream-backport` for a draft PR
-after the rename and fresh fork. Independent review, hosted build checks and
+The source port is pushed to `kori/recreated-upstream-backport` in the fresh
+fork for draft PR review. Independent review, final-head hosted build checks and
 hardware validation remain separate gates. Local file/fake tests do not qualify
 USB/MIDI access, bootability, restoration, physical-media independence or writer
 failure/recovery. No target code is run, no device is accessed and no release is
@@ -69,3 +68,15 @@ The README adds an integration-fork overview and links the migration and existin
 capability guides. There is no changelog in this repository; this is a source
 migration, not a new feature release. Existing dated evidence remains attributed
 to its original source/artifact and device observation.
+
+Local validation passed 4 offline adapter guards and 88 shared file/fake tests;
+the Felucca consumer follow-up passed 16 Python tests. The initial local Cargo
+pass could not run with an empty dependency cache. Hosted validation on identical
+code at `72894f7` passed the complete
+[offline suite](https://github.com/kmplngj/m-flasher-legacy/actions/runs/39558251522),
+[native MIDI builds](https://github.com/kmplngj/m-flasher-legacy/actions/runs/39558251553)
+and [platform builds/package tests](https://github.com/kmplngj/m-flasher-legacy/actions/runs/39558251509).
+Later commits add only documentation and the byte-identical merged archive.
+Fresh-fork PR checks must still run for its final head. Private firmware corpus
+tests remain ignored, and physical qualification is pending. No runtime hardware
+claim is made from hosted builds or fake transports.
