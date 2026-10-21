@@ -10,8 +10,8 @@ The canonical work tracker for the existing FM-1 roadmap stays there.
 [`kmplngj/m-flasher`](https://github.com/kmplngj/m-flasher) is a fresh GitHub fork
 of the recreated [`jvitkauskas/m-flasher`](https://github.com/jvitkauskas/m-flasher).
 Its repository ID is `1428000725` and its parent ID is `1423336301`. The backport
-is on `kori/recreated-upstream-backport` for draft review; `main` retains the
-upstream baseline until review and an authorized merge.
+is tracked by [PR 1](https://github.com/kmplngj/m-flasher/pull/1), based on the
+upstream baseline. Its PR records the final review and merge evidence.
 
 The recreated upstream has unrelated Git history. This port starts at upstream
 `7cd66e0` (0.5.1) and applies only our changes since old upstream `9d96274`,
@@ -22,17 +22,16 @@ or replace the current upstream bootloader/loader assets with the old ones.
 
 - Legacy main `e897df2`: experimental FMR1 reader and protected two-pass raw
   backup, saved-file diagnostics, parser/transaction checks, file/fake tests,
-  contribution/evidence documents and optional native Felucca MIDI OTA CLI.
-- Upstream `src/midi.rs` retains the download-mode soft key. The fork's OTA
-  codec moves to `src/midi_ota.rs`. Test/offline builds exclude both native
-  adapters and test their refusal paths. The real sequencer loopback test is
-  excluded from this offline-only suite.
+  contribution/evidence documents. The former native Felucca OTA CLI is excluded.
+- Upstream `src/midi.rs` retains the download-mode soft key. Test/offline builds
+  exclude its native adapter and test its refusal paths. The real sequencer
+  loopback test is excluded from this offline-only suite.
 - The upstream SCSI byte-count contract is retained. The offline adapter is
   adapted to it. Current board recognition and m-bootloader support remain.
-- Pending [legacy PR 32](https://github.com/kmplngj/m-flasher-legacy/pull/32),
-  `af3cd2b`: exact compatible-loader gating, ported as a separate commit. This
-  preserves the safety constraint already required by Felucca's pinned helper;
-  it does not mark that PR merged or establish new hardware qualification.
+- The native Rust OTA package, codec, adapter, fixtures, workflow and packaging
+  are removed from the active fork. The pending loader-safety change from
+  [legacy PR 32](https://github.com/kmplngj/m-flasher-legacy/pull/32) stays in
+  legacy history; no native installer is adopted into Felucca.
 
 The research archive from [legacy PR 27](https://github.com/kmplngj/m-flasher-legacy/pull/27)
 merged into legacy main `aeb061a` during migration and is included in a separate
@@ -49,34 +48,26 @@ preserved byte-for-byte. References inside historical snapshots may still use
 the original name and must be resolved in the legacy repository. Reusing the
 old name means GitHub redirects no longer resolve those URLs to the old repo.
 
-Felucca's installer pins `af3cd2b75e175e09b695a261481774952d6e414f` and its
-existing native Actions artifacts. It must fetch those from `m-flasher-legacy`
-until a separately reviewed adoption changes its source pin. Existing manifests
-using the original repository name remain historical provenance for that exact
-revision. The migration PR is not a replacement binary or release.
+Felucca uses its maintained Python updater (`tools/fm1_install.py`).
+[Felucca PR 502](https://github.com/kmplngj/Felucca/pull/502) removes the native
+binary downloader, source pin, cache setup and backend selection. The helper
+checks `mido`/`python-rtmidi` in the caller's interpreter before firmware CI;
+download/source-only modes need no MIDI packages. Historical native source and
+Actions artifacts remain in legacy history and are not used by this workflow.
 
 ## Validation and review status
 
-The source port is pushed to `kori/recreated-upstream-backport` in the fresh
-fork for draft PR review. Independent review, final-head hosted build checks and
-hardware validation remain separate gates. Local file/fake tests do not qualify
-USB/MIDI access, bootability, restoration, physical-media independence or writer
-failure/recovery. No target code is run, no device is accessed and no release is
-created as part of the migration.
+Review and hosted build evidence belongs to PR 1. Local file/fake tests do not
+qualify USB/MIDI access, bootability, restoration, physical-media independence
+or writer failure/recovery. No device is accessed and no firmware is flashed or
+release created as part of this source migration.
 
-The README adds an integration-fork overview and links the migration and existing
-capability guides. There is no changelog in this repository; this is a source
-migration, not a new feature release. Existing dated evidence remains attributed
-to its original source/artifact and device observation.
+After removing the native OTA code, local validation passed 4 offline adapter
+guards and 71 shared tests. Full guarded Cargo, platform builds and reader
+harnesses are required by CI; the local dependency cache is incomplete. Private
+firmware corpus tests remain ignored, and physical qualification is pending.
+Historical observations remain attributed to their tested artifact and device.
 
-Local validation passed 4 offline adapter guards and 88 shared file/fake tests;
-the Felucca consumer follow-up passed 16 Python tests. The initial local Cargo
-pass could not run with an empty dependency cache. Hosted validation on identical
-code at `72894f7` passed the complete
-[offline suite](https://github.com/kmplngj/m-flasher-legacy/actions/runs/39558251522),
-[native MIDI builds](https://github.com/kmplngj/m-flasher-legacy/actions/runs/39558251553)
-and [platform builds/package tests](https://github.com/kmplngj/m-flasher-legacy/actions/runs/39558251509).
-Later commits add only documentation and the byte-identical merged archive.
-Fresh-fork PR checks must still run for its final head. Private firmware corpus
-tests remain ignored, and physical qualification is pending. No runtime hardware
-claim is made from hosted builds or fake transports.
+The README describes backup/diagnostics and upstream MIDI download-mode support,
+and points to Felucca's Python updater for OTA. There is no repository changelog;
+this migration creates no release or new hardware qualification.

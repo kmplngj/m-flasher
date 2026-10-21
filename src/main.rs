@@ -21,10 +21,6 @@ mod cli;
 mod controller;
 mod fonts;
 mod formats;
-mod midi_ota;
-mod midi_cli;
-#[cfg(all(feature = "midi", not(any(test, feature = "offline-tests"))))]
-mod midi_native;
 mod fmr_bootstrap;
 mod fmr_bot;
 mod fmr_cli;

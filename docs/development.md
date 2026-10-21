@@ -60,8 +60,6 @@ flash loader, the m-bootloader builds and the fonts are all inside it.
 
 ```sh
 cargo build --release          # existing GUI/ROM CLI
-cargo build --release --locked -p m-flasher-midi  # small MIDI-only CLI
-# Or include MIDI in the full application: cargo build --release --locked --features midi
 python3 tools/run_offline_tests.py          # no Cargo dependencies or native adapters
 python3 tools/run_offline_tests.py --cargo  # full suite, locked dependencies already cached
 ```

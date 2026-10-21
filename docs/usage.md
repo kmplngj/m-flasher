@@ -117,10 +117,12 @@ and need a typed `yes`, or `--yes`.
   over SSH: macOS asks about the removable volume only on the screen.
 - Linux: `m-flasher info` (from the tarball: `./m-flasher info`); `man m-flasher` with the packages.
 
-## Optional MIDI OTA
+## Felucca MIDI OTA
 
-See [MIDI OTA](midi-ota.md) for the separate native MIDI CLI and exact setup.
-`m-flasher midi firmware PACKAGE.fwsc` uses running firmware, not download mode.
+Use Felucca's maintained [Python updater](https://github.com/kmplngj/Felucca/blob/main/tools/fm1_install.py)
+and [installation guide](https://github.com/kmplngj/Felucca/blob/main/BUILDING.md#install)
+for running-firmware MIDI updates. M-Flasher's MIDI download-mode soft key remains
+available for entering the ROM USB route; this fork supplies no separate OTA CLI.
 
 ## Slow USB ports
 

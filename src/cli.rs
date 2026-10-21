@@ -92,9 +92,6 @@ fn download_mode() -> Result<(), Error> {
 }
 
 pub fn run(args: Vec<String>) -> i32 {
-    if args.first().is_some_and(|s| s == "midi" || s == "--capabilities") {
-        return crate::midi_cli::run(&args);
-    }
     if args.first().is_some_and(|s| matches!(s.as_str(), "inspect" | "verify" | "dry-plan")) {
         return crate::saved_cli::run(&args);
     }

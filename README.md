@@ -15,8 +15,9 @@ the unit is broken. For Windows, macOS and Linux.
 
 This fork follows [jvitkauskas/m-flasher](https://github.com/jvitkauskas/m-flasher)
 and adds the FM-1 read-only backup workflow, saved-file diagnostics, offline test
-isolation and optional Felucca MIDI OTA. The port onto the recreated upstream is
-under review in the fresh fork; it is not a hardware qualification or release. The original issues,
+isolation. Felucca MIDI OTA uses its maintained
+[Python updater](https://github.com/kmplngj/Felucca/blob/main/tools/fm1_install.py);
+this fork retains upstream's MIDI download-mode soft key. The original issues,
 PRs and exact historical sources remain in
 [m-flasher-legacy](https://github.com/kmplngj/m-flasher-legacy).
 See [repository migration](docs/repository-migration.md) for provenance and limits.
@@ -33,7 +34,6 @@ See [repository migration](docs/repository-migration.md) for provenance and limi
 - **Inspect saved dumps**, compare files and export sanitized recovery diagnostics
   without discovering or connecting a device ([file-only commands](docs/saved-diagnostics.md)).
 - A command line as well as the window.
-- Optional [native MIDI OTA](docs/midi-ota.md) for Felucca FM-1 packages, without Python MIDI dependencies. The MIDI-only CLI is available from successful native MIDI Actions builds; normal release packages retain their existing features until a release explicitly includes MIDI.
 
 ## Getting started
 
@@ -69,7 +69,8 @@ a recovery menu for when the firmware does not start.
 
 ## Credits and license
 
-MIT ([LICENSE](LICENSE)). Bundled files and their licenses:
+MIT ([LICENSE](LICENSE)); the optional [RAM reader](ram-reader/README.md) is
+Apache-2.0 with its own notices. Bundled files and their licenses:
 [data/NOTICE.md](data/NOTICE.md) and
 [assets/README.md](assets/README.md). The protocol follows
 [jl-uboot-tool](https://github.com/kagaimiq/jl-uboot-tool) by kagaimiq, and the

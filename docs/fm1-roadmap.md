@@ -6,6 +6,11 @@ The minimal read-only RAM reader has a separate **experimental CLI integration**
 
 Issue numbers in this roadmap refer to the [legacy work tracker](https://github.com/kmplngj/m-flasher-legacy/issues), which retains the original acceptance criteria and discussions. See [repository migration](repository-migration.md) for source and PR provenance.
 
+Felucca MIDI OTA is maintained in [its Python updater](https://github.com/kmplngj/Felucca/blob/main/tools/fm1_install.py).
+The former optional Rust OTA implementation is retained only in legacy history;
+this fork does not build or distribute it. Historical MIDI proposals in this
+roadmap/archive are deferred reference scope, not an active native installer.
+
 ## Delivery sequence
 
 First establish the exact reader artifact (#3), strict transport (#4) and host profile (#5), then running-stock identity/entry and a small read/return qualification (#6–#8). Only afterward activate two fresh full raw passes (#9) and protected independent copies (#10). Offline seams (#2) and saved-file work can progress independently of physical gates. The migration map separates offline prerequisites from integration inputs and physical activation: #9 requires physical #8 only for activation, and #11 consumes #10 receipts when available without requiring a prior hardware capture.

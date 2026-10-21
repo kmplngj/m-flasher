@@ -107,15 +107,11 @@ and the pure planner shared with the existing session path. Native adapters stay
 compiled out. This adds bounded parser/incident fixtures toward #2; it does not
 close the remaining transport, storage/clock or physical failure-model work.
 
-The MIDI codec, immutable package checks and injected-clock transcripts are also in
-the std-only harness. A separate native MIDI entrypoint denial check runs before
-the shared suite. Production MIDI capability queries initialize no native backend.
-
 ## Recreated upstream MIDI adapter
 
-The GUI/CLI download-mode soft key in `src/midi.rs` is separate from the Felucca
-OTA protocol in `src/midi_ota.rs`. Both native implementations are compiled out in
-test/offline builds. The canonical runner includes the upstream pure port-name
+The GUI/CLI download-mode soft key in `src/midi.rs` remains upstream behavior.
+Its native implementation is compiled out in test/offline builds. Felucca OTA
+is handled by its Python updater, outside this repository. The canonical runner includes the upstream pure port-name
 and ALSA-card parser tests and proves that soft-key inventory and sending are
 refused before the shared suite. The upstream real-sequencer loopback test is
 excluded from the offline suite; device access is never enabled by `--ignored`.

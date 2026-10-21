@@ -6,11 +6,6 @@ description = "Back up, restore and install firmware/bootloaders on the M-VAVE F
 license = "MIT"
 build = "build.rs"
 
-[workspace]
-members = ["midi-cli"]
-default-members = ["."]
-resolver = "3"
-
 [dependencies]
 eframe = { version = "0.36", default-features = false, features = ["glow", "wayland", "x11", "default_fonts"] }
 rfd = "0.17"
@@ -18,7 +13,6 @@ sha2 = "0.11"
 chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
 skrifa = "0.44"
 lyon_tessellation = "1"
-midir-ota = { package = "midir", version = "=0.10.3", optional = true }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 libc = "0.2"
@@ -35,7 +29,6 @@ midir = "0.11"
 nusb = { version = "=0.2.8", optional = true, default-features = false }
 
 [features]
-midi = ["dep:midir-ota"]
 # Compile host adapters out for file-only tests. No native hardware calls.
 offline-tests = []
 # Explicit opt-in for the bounded FMR1 hardware qualification command.
