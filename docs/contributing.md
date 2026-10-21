@@ -1,5 +1,9 @@
 # Contributing
 
+Existing FM-1 roadmap issue numbers belong to `kmplngj/m-flasher-legacy`;
+see [repository migration](repository-migration.md). New fork work targets
+`kmplngj/m-flasher`.
+
 `origin` is the integration fork, `kmplngj/m-flasher`; its shared integration
 branch is `main`. `upstream` is `jvitkauskas/m-flasher`, with base `main`.
 The fork can progress while an upstream PR is pending.
